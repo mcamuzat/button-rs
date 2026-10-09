@@ -1,0 +1,81 @@
+# Boutons originaux de buttonmen-rs (diffusables). Notation : docs/RULES.md, R 1.1.
+
+[[button]]
+name = "Avoine"
+recipe = "(4) (4) (10) (12) (X)"
+
+[[button]]
+name = "Brindille"
+recipe = "(6) (8) (12) (20) (Y)"
+
+[[button]]
+name = "Carmin"
+recipe = "p(4) (8) (10) (12) (X)"
+
+[[button]]
+name = "Dune"
+recipe = "s(4) s(6) (10) (12) (Z)"
+
+[[button]]
+name = "Écho"
+recipe = "z(4) (6) z(10) (12) (X)"
+
+[[button]]
+name = "Fenouil"
+recipe = "t(4) (6) (8) (12) (V)"
+
+[[button]]
+name = "Grêle"
+recipe = "B(8) (10) (12) B(20) (W)"
+
+[[button]]
+name = "Houle"
+recipe = "f(4) f(6) (10) (12) (X)"
+
+[[button]]
+name = "Iris"
+recipe = "c(4) (8) c(10) (12) (Y)"
+
+[[button]]
+name = "Jade"
+recipe = "n(6) (8) (10) (12) (X)"
+
+[[button]]
+name = "Kilim"
+recipe = "k(4) (6) (10) (12) (S)"
+
+[[button]]
+name = "Lierre"
+recipe = "g(4) g(6) (10) (12) (X)"
+
+[[button]]
+name = "Mistral"
+recipe = "q(6) q(8) (10) (12) (T)"
+
+[[button]]
+name = "Nacre"
+recipe = "(4) (6) (10) (12) r(20) r(X)"
+
+[[button]]
+name = "Opale"
+recipe = "v(6) v(10) (12) (20) (U)"
+
+[[button]]
+name = "Pavot"
+recipe = "d(4) d(6) (10) (12) (X)"
+
+[[button]]
+name = "Quartz"
+recipe = "F(6) (8) F(10) (12) (X)"
+
+[[button]]
+name = "Roseau"
+recipe = "(4/8) (6/10) (10) (12) (X)"
+
+[[button]]
+name = "Sable"
+recipe = "(4,4) (8) (10) (X,X)"
+
+[[button]]
+name = "Tonnerre"
+recipe = "ps(10) zt(8) (12) Bf(6) (R)"
