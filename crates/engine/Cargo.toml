@@ -1,0 +1,20 @@
+[package]
+name = "buttonmen-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# Génère les types TypeScript (cargo test -p buttonmen-engine --features ts).
+ts = ["dep:ts-rs"]
+# Expose le module `testing` (constructeur de scénarios) aux tests et aux autres crates.
+testing = []
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+ts-rs = { workspace = true, optional = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,27 @@
+[workspace]
+members = ["crates/engine"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+nom = "8"
+toml = "1"
+ts-rs = "12"
+proptest = "1"
+buttonmen-engine = { path = "crates/engine" }
+buttonmen-data = { path = "crates/button-data" }
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

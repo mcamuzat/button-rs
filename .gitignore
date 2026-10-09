@@ -1,0 +1,6 @@
+/target
+/data/buttonweavers/
+/client/public/buttonweavers/
+/client/node_modules
+/client/dist
+/client/src/wasm/
