@@ -4,6 +4,8 @@ import { useGame } from "../adapters/useGame";
 import type { Action } from "../engine/generated/Action";
 import type { DieId } from "../engine/generated/DieId";
 import { ActionArea } from "../table/ActionArea";
+import { Handoff } from "../table/Handoff";
+import { MatchEnd } from "../table/MatchEnd";
 import { PlayerArea } from "../table/PlayerArea";
 import { seatLabel } from "../table/seats";
 import { selectableDice, toggle, type Selection } from "../table/selection";
@@ -28,6 +30,11 @@ export function Table({ adapter, onLeave }: Props) {
     if (!seat) return;
     setError(adapter.dispatch(seat, action));
   }
+
+  // Hotseat: before a secret choice, the screen waits for the right player.
+  const [readySeat, setReadySeat] = useState<string | null>(null);
+  const secret = view.legal.type === "SpecifyDice";
+  const needsHandoff = secret && seat !== null && readySeat !== `${view.round}-${seat}`;
 
   const attacks = view.legal.type === "Attack" ? view.legal.attacks : [];
   const selectable = selectableDice(attacks, selection);
@@ -79,6 +86,8 @@ export function Table({ adapter, onLeave }: Props) {
           {error}
         </p>
       )}
+      {needsHandoff && seat && <Handoff seat={seat} onReady={() => setReadySeat(`${view.round}-${seat}`)} />}
+      <MatchEnd view={view} onLeave={onLeave} />
     </main>
   );
 }

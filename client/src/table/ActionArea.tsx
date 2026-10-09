@@ -1,8 +1,12 @@
 import type { Action } from "../engine/generated/Action";
 import type { GameView } from "../engine/generated/GameView";
 import { AttackPanel } from "./AttackPanel";
+import { FirePanel } from "./FirePanel";
+import { InitiativePanel } from "./InitiativePanel";
+import { ReservePanel } from "./ReservePanel";
 import { seatLabel } from "./seats";
 import type { Selection } from "./selection";
+import { SpecifyDicePanel } from "./SpecifyDicePanel";
 
 interface Props {
   view: GameView;
@@ -15,6 +19,16 @@ interface Props {
 export function ActionArea({ view, act, selection, onClearSelection }: Props) {
   const legal = view.legal;
   const who = view.viewer.type === "Seat" ? seatLabel(view.viewer.player) : "";
+  // Recipe notation of any die id, from the engine-provided views.
+  const notation = (id: number) => {
+    for (const p of view.players) {
+      const die = [...p.active, ...p.captured.map((c) => c.die)].find((d) => d.id === id);
+      if (die) return die.notation;
+      const slot = p.reserve.find((r) => r.id === id);
+      if (slot) return slot.notation;
+    }
+    return `#${id}`;
+  };
   let body;
   switch (legal.type) {
     case "Attack":
@@ -29,11 +43,16 @@ export function ActionArea({ view, act, selection, onClearSelection }: Props) {
       );
       break;
     case "SpecifyDice":
+      body = <SpecifyDicePanel swing={legal.swing} options={legal.options} act={act} />;
+      break;
     case "ChooseReserve":
+      body = <ReservePanel dice={legal.dice} notation={notation} act={act} />;
+      break;
     case "ReactToInitiative":
+      body = <InitiativePanel focus={legal.focus} chance={legal.chance} notation={notation} act={act} />;
+      break;
     case "AdjustFire":
-      // Panels added in Task 18.
-      body = <span>{legal.type}</span>;
+      body = <FirePanel fire={legal.fire} boosts={legal.boosts} notation={notation} act={act} />;
       break;
     case "Wait":
     case "GameOver":
