@@ -46,6 +46,7 @@ dependencies = [
 name = "buttonmen-engine"
 version = "0.1.0"
 dependencies = [
+ "buttonmen-engine",
  "proptest",
  "serde",
  "serde_json",

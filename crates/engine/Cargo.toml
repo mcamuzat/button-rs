@@ -18,3 +18,4 @@ ts-rs = { workspace = true, optional = true }
 [dev-dependencies]
 proptest = { workspace = true }
 serde_json = { workspace = true }
+buttonmen-engine = { path = ".", features = ["testing"] }
