@@ -102,3 +102,12 @@ pub fn attack_state(one: Vec<Placed>, two: Vec<Placed>, to_move: PlayerId) -> Ga
 pub fn id(state: &GameState, player: PlayerId, index: usize) -> DieId {
     state.player(player).slots[index].id
 }
+
+/// Like `attack_state`, but the initiative is then decided from the forced values
+/// (R 3.3–3.5), so the state may wait for an initiative reaction.
+pub fn opening_state(one: Vec<Placed>, two: Vec<Placed>) -> GameState {
+    let mut state = attack_state(one, two, PlayerId::One);
+    state.initiative = None;
+    crate::initiative::determine(&mut state, &mut Vec::new());
+    state
+}

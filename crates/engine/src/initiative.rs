@@ -1,9 +1,13 @@
 use std::cmp::Ordering;
 
+use crate::error::{ReactionError, RuleError};
 use crate::event::GameEvent;
 use crate::hooks;
+use crate::ids::DieId;
 use crate::ids::PlayerId;
+use crate::skill::DieSkill;
 use crate::state::{GameState, WaitingFor};
+use std::collections::BTreeSet;
 
 /// R 3.3: sorted values of `player`'s dice that count for initiative.
 pub(crate) fn initiative_values(state: &GameState, player: PlayerId) -> Vec<u8> {
@@ -54,7 +58,7 @@ pub(crate) fn determine(state: &mut GameState, events: &mut Vec<GameEvent>) {
         player: winner,
         by_coin,
     });
-    start_attacks(state);
+    offer_reaction(state, winner.other());
 }
 
 /// R 6.4 / R 7.4: only the starting player's lowered Focus dice stay dizzy.
@@ -66,6 +70,132 @@ pub(crate) fn start_attacks(state: &mut GameState) {
         die.dizzy = false;
     }
     state.waiting_for = WaitingFor::Attack { player: first };
+}
+
+fn can_react(state: &GameState, player: PlayerId) -> bool {
+    state
+        .player(player)
+        .active
+        .iter()
+        .any(|d| d.has(DieSkill::Focus) || d.has(DieSkill::Chance))
+}
+
+/// R 3.5: the player without initiative may react if they have Focus or Chance dice.
+pub(crate) fn offer_reaction(state: &mut GameState, player: PlayerId) {
+    if can_react(state, player) {
+        state.waiting_for = WaitingFor::ReactToInitiative { player };
+    } else {
+        start_attacks(state);
+    }
+}
+
+fn expect_reacting(state: &GameState, player: PlayerId) -> Result<(), RuleError> {
+    match state.waiting_for {
+        WaitingFor::ReactToInitiative { player: p } if p == player => Ok(()),
+        WaitingFor::ReactToInitiative { .. } => Err(RuleError::NotYourTurn),
+        _ => Err(RuleError::WrongPhase),
+    }
+}
+
+fn reaction(reason: ReactionError) -> RuleError {
+    RuleError::InvalidReaction { reason }
+}
+
+/// R 6.4: lower one or more Focus dice, only to gain the initiative.
+pub(crate) fn focus_turn_down(
+    state: &mut GameState,
+    player: PlayerId,
+    dice: Vec<(DieId, u8)>,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuleError> {
+    expect_reacting(state, player)?;
+    if dice.is_empty() {
+        return Err(reaction(ReactionError::NoDice));
+    }
+    let mut seen = BTreeSet::new();
+    for &(id, value) in &dice {
+        let die = state
+            .player(player)
+            .die(id)
+            .ok_or(RuleError::UnknownDie { die: id })?;
+        if !die.has(DieSkill::Focus) {
+            return Err(reaction(ReactionError::NotFocus { die: id }));
+        }
+        if !seen.insert(id) || value >= die.value || value < die.min() {
+            return Err(reaction(ReactionError::ValueNotLowered { die: id }));
+        }
+    }
+    for &(id, value) in &dice {
+        let die = state.player_mut(player).die_mut(id).expect("checked above");
+        die.value = value;
+        // R 6.4: unusable for the first attack if this player starts.
+        die.dizzy = true;
+    }
+    let order = compare(
+        &initiative_values(state, player),
+        &initiative_values(state, player.other()),
+    );
+    if order != Ordering::Less {
+        return Err(reaction(ReactionError::DoesNotGainInitiative));
+    }
+    events.push(GameEvent::FocusTurnedDown { player, dice });
+    state.initiative = Some(player);
+    offer_reaction(state, player.other());
+    Ok(())
+}
+
+/// R 6.2: reroll one Chance die; a failed attempt ends the reactions.
+pub(crate) fn chance_reroll(
+    state: &mut GameState,
+    player: PlayerId,
+    id: DieId,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuleError> {
+    expect_reacting(state, player)?;
+    let GameState { players, rng, .. } = state;
+    let die = players[player.index()]
+        .die_mut(id)
+        .ok_or(RuleError::UnknownDie { die: id })?;
+    if !die.has(DieSkill::Chance) {
+        return Err(reaction(ReactionError::NotChance { die: id }));
+    }
+    hooks::reroll(die, rng);
+    let value = die.value;
+    events.push(GameEvent::ChanceRerolled {
+        player,
+        die: id,
+        value,
+    });
+    let order = compare(
+        &initiative_values(state, player),
+        &initiative_values(state, player.other()),
+    );
+    let (gains, by_coin) = match order {
+        Ordering::Less => (true, false),
+        Ordering::Greater => (false, false),
+        // R 3.4: a tie is settled by a coin toss.
+        Ordering::Equal => (state.rng.coin(), true),
+    };
+    if gains {
+        state.initiative = Some(player);
+        events.push(GameEvent::InitiativeDecided { player, by_coin });
+        offer_reaction(state, player.other());
+    } else {
+        start_attacks(state);
+    }
+    Ok(())
+}
+
+/// R 3.5: let the opponent start.
+pub(crate) fn pass_initiative(
+    state: &mut GameState,
+    player: PlayerId,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuleError> {
+    expect_reacting(state, player)?;
+    events.push(GameEvent::InitiativePassed { player });
+    start_attacks(state);
+    Ok(())
 }
 
 #[cfg(test)]
