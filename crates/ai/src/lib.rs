@@ -3,6 +3,8 @@
 
 mod eval;
 mod observe;
+mod policy;
 
 pub use eval::{capture_gain, evaluate};
 pub use observe::{observe, reseeded};
+pub use policy::{attack_gain, quick_action, rollout};
