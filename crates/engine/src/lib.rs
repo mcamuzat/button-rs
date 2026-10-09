@@ -10,6 +10,7 @@ mod fire;
 mod hooks;
 pub mod ids;
 mod initiative;
+mod legal;
 mod resolve;
 pub mod rng;
 mod round;
@@ -27,6 +28,10 @@ pub use die::{Die, DieShape, DieSpec, Sides, SwingLetter, TwinPart};
 pub use error::{AttackError, FireError, ReactionError, RuleError};
 pub use event::GameEvent;
 pub use ids::{DieId, PlayerId};
+pub use legal::{
+    AttackOption, FireCapacity, FocusRange, LegalActions, OptionRequest, SwingRequest,
+    candidate_actions, legal_actions,
+};
 pub use rng::SeededRng;
 pub use scoring::round_score;
 pub use setup::new_game;
