@@ -11,7 +11,7 @@ export class LocalAdapter implements GameAdapter {
   private readonly listeners = new Set<() => void>();
 
   constructor(private readonly engine: EngineMatch) {
-    this.snapshot = { view: this.currentView(), lastEvents: [] };
+    this.snapshot = { view: this.currentView(), lastEvents: [], version: 0 };
   }
 
   private viewAs(viewer: Viewer): GameView {
@@ -32,9 +32,15 @@ export class LocalAdapter implements GameAdapter {
   };
 
   dispatch(player: PlayerId, action: Action): string | null {
-    const outcome = JSON.parse(this.engine.apply(JSON.stringify(player), JSON.stringify(action))) as ApplyOutcome;
+    let outcome: ApplyOutcome;
+    try {
+      outcome = JSON.parse(this.engine.apply(JSON.stringify(player), JSON.stringify(action))) as ApplyOutcome;
+    } catch (e) {
+      // Malformed input is refused by the bridge with an exception: report it like a rule refusal.
+      return e instanceof Error ? e.message : String(e);
+    }
     if (outcome.type === "Rejected") return outcome.message;
-    this.snapshot = { view: this.currentView(), lastEvents: outcome.events };
+    this.snapshot = { view: this.currentView(), lastEvents: outcome.events, version: this.snapshot.version + 1 };
     this.listeners.forEach((listener) => listener());
     return null;
   }

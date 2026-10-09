@@ -13,6 +13,9 @@ export interface EngineMatch {
 export interface Snapshot {
   view: GameView;
   lastEvents: GameEvent[];
+  /** Grows with every accepted action: decision panels are keyed on it so their input
+   * state never carries over from one decision (or one player) to the next. */
+  version: number;
 }
 
 /** One interface for every way of playing (hotseat now; AI and online in later milestones). */

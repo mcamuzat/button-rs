@@ -18,7 +18,7 @@ interface Props {
 const EMPTY: Selection = { attackers: [], targets: [] };
 
 export function Table({ adapter, onLeave }: Props) {
-  const { view } = useGame(adapter);
+  const { view, version } = useGame(adapter);
   const [selection, setSelection] = useState<Selection>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const seat = view.viewer.type === "Seat" ? view.viewer.player : null;
@@ -79,7 +79,7 @@ export function Table({ adapter, onLeave }: Props) {
         </div>
       </header>
       {area(two)}
-      <ActionArea view={view} act={act} selection={selection} onClearSelection={() => setSelection(EMPTY)} />
+      <ActionArea key={version} view={view} act={act} selection={selection} onClearSelection={() => setSelection(EMPTY)} />
       {area(one)}
       {error && (
         <p role="alert" className="rounded-lg bg-danger/90 px-4 py-2">

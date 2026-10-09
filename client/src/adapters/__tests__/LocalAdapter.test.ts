@@ -38,6 +38,24 @@ describe("LocalAdapter", () => {
     expect(adapter.getSnapshot().lastEvents).toEqual([{ type: "Passed", player: "Two" }]);
   });
 
+  it("numbers each decision so panels start fresh for every new decision", () => {
+    const adapter = new LocalAdapter(fakeMatch());
+    const first = adapter.getSnapshot().version;
+    adapter.dispatch("One", { type: "Pass" });
+    expect(adapter.getSnapshot().version).toBe(first);
+    adapter.dispatch("Two", { type: "Pass" });
+    expect(adapter.getSnapshot().version).toBe(first + 1);
+  });
+
+  it("turns an engine exception into a message instead of throwing", () => {
+    const engine = fakeMatch();
+    engine.apply = () => {
+      throw new Error("invalid type: null");
+    };
+    const adapter = new LocalAdapter(engine);
+    expect(adapter.dispatch("Two", { type: "Pass" })).toBe("invalid type: null");
+  });
+
   it("frees the engine on dispose", () => {
     const engine = fakeMatch();
     new LocalAdapter(engine).dispose();
