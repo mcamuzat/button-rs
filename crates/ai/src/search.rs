@@ -56,6 +56,15 @@ impl Level {
     }
 }
 
+/// Moves searched at depth 2, chosen by a one-sample first look.
+const DEEP_CANDIDATES: usize = 12;
+/// Total rerolls sampled per decision (all candidates together).
+const SAMPLE_BUDGET: u32 = 160;
+/// Total rounds simulated per decision before the round starts.
+const ROLLOUT_BUDGET: u32 = 384;
+/// Never fewer samples or rollouts per candidate than this.
+const MIN_RUNS: u32 = 3;
+
 /// Picks `me`'s action (spec §7): sampled expectimax over `candidate_actions`, seen
 /// through `observe` (no hidden information). Deterministic for a given `seed`.
 pub fn choose_action(state: &GameState, me: PlayerId, level: Level, seed: u64) -> Option<Action> {
@@ -84,13 +93,34 @@ pub fn choose_action(state: &GameState, me: PlayerId, level: Level, seed: u64) -
         let pick = (rng.next_u64() % candidates.len() as u64) as usize;
         return Some(candidates.swap_remove(pick));
     }
+    // Bounded effort (spec §7, "échantillonnées au-delà d'un seuil"): at depth 2 only the
+    // most promising moves are searched, and the samples or rollouts per move shrink when
+    // there are many moves, so that a decision stays fast on large buttons.
+    if params.depth >= 2 && !before_round && candidates.len() > DEEP_CANDIDATES {
+        let mut first_look: Vec<(Action, f64)> = candidates
+            .into_iter()
+            .map(|action| {
+                let sample = reseeded(&seen, rng.next_u64());
+                let value = apply(&sample, me, action.clone())
+                    .map_or(f64::MIN / 2.0, |(next, _)| evaluate(&settle(next, me), me));
+                (action, value)
+            })
+            .collect();
+        first_look.sort_by(|a, b| b.1.total_cmp(&a.1));
+        candidates = first_look
+            .into_iter()
+            .take(DEEP_CANDIDATES)
+            .map(|(a, _)| a)
+            .collect();
+    }
+    let (wanted, budget) = if before_round {
+        (params.rollouts, ROLLOUT_BUDGET)
+    } else {
+        (params.samples, SAMPLE_BUDGET)
+    };
+    let runs = wanted.min((budget / candidates.len() as u32).max(MIN_RUNS));
     let mut best: Option<(Action, f64)> = None;
     for action in candidates {
-        let runs = if before_round {
-            params.rollouts
-        } else {
-            params.samples
-        };
         let mut total = 0.0;
         for _ in 0..runs {
             let sample = reseeded(&seen, rng.next_u64());

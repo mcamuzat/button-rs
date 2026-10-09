@@ -71,20 +71,72 @@ fn hard_beats_easy() {
     );
 }
 
+/// Review Focus 5: the AI must answer quickly even in the heaviest positions. Budget for
+/// a native release build; WASM in a browser is about three times slower.
+const BUDGET: Duration = Duration::from_millis(400);
+
+fn timed(state: &GameState, me: PlayerId) -> Duration {
+    let start = Instant::now();
+    assert!(choose_action(state, me, Level::Hard, 1).is_some());
+    start.elapsed()
+}
+
 #[test]
 #[ignore = "timing: cargo test -p buttonmen-ai --release -- --ignored"]
 fn hard_decides_quickly_on_large_buttons() {
-    // Review Focus 5: nine dice each, the largest playable buttonweavers size.
-    let nine = |v: u8| {
-        (0..9)
-            .map(|i| die(4 + 2 * i, v.min(4 + 2 * i)))
-            .collect::<Vec<_>>()
-    };
-    let s = attack_state(nine(3), nine(5), PlayerId::One);
-    let start = Instant::now();
-    let action = choose_action(&s, PlayerId::One, Level::Hard, 1);
-    let spent = start.elapsed();
-    println!("Difficile, 9 dés contre 9 : {spent:?}");
-    assert!(action.is_some());
-    assert!(spent < Duration::from_secs(3), "{spent:?}");
+    // Eight Poison dice each, like buttonweavers' Super Germ against Max: many attacks.
+    let poison = |sides: u8, value: u8| die(sides, value).with(DieSkill::Poison);
+    let one = [
+        (10, 3),
+        (12, 7),
+        (16, 9),
+        (20, 14),
+        (24, 5),
+        (30, 22),
+        (30, 17),
+        (20, 11),
+    ];
+    let two = [
+        (12, 6),
+        (12, 2),
+        (20, 13),
+        (20, 8),
+        (30, 25),
+        (30, 4),
+        (20, 19),
+        (20, 10),
+    ];
+    let s = attack_state(
+        one.iter().map(|&(n, v)| poison(n, v)).collect(),
+        two.iter().map(|&(n, v)| poison(n, v)).collect(),
+        PlayerId::One,
+    );
+    let candidates = buttonmen_engine::candidate_actions(&s, PlayerId::One).len();
+    assert!(
+        candidates >= 30,
+        "only {candidates} candidates: not a heavy position"
+    );
+    let spent = timed(&s, PlayerId::One);
+    println!("Difficile, attaque à {candidates} coups : {spent:?}");
+    assert!(spent < BUDGET, "{spent:?}");
+}
+
+#[test]
+#[ignore = "timing: cargo test -p buttonmen-ai --release -- --ignored"]
+fn hard_chooses_many_swing_dice_quickly() {
+    // buttonweavers' CactusJack against schwa: options and five swing letters.
+    let recipe = |r: &str| buttonmen_data::parse_recipe(r).expect("valid recipe");
+    let s = new_game(
+        [
+            button("CactusJack", recipe("z(8/12) (4/16) s(6/10) z(X) s(U)")),
+            button("schwa", recipe("f(V) t(W) d(X) v(Y) B(Z)")),
+        ],
+        1,
+        MatchConfig::default(),
+    );
+    for me in [PlayerId::One, PlayerId::Two] {
+        let spent = timed(&s, me);
+        println!("Difficile, choix des Swing ({me:?}) : {spent:?}");
+        assert!(spent < BUDGET, "{spent:?}");
+    }
 }
