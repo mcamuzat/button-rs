@@ -6,8 +6,8 @@ use buttonmen_engine::{
 const MATCH_WON: f64 = 1.0e9;
 /// One round of lead is worth more than any score difference within a round.
 const ROUND_WON: f64 = 1000.0;
-/// A threat is not a capture yet.
-const THREAT_WEIGHT: f64 = 0.5;
+/// Tuned in the arena (`hard_beats_easy`): 1.0 won 17 / 18, 0.5 won 12 / 18, 1.5 won 16 / 18.
+const THREAT_WEIGHT: f64 = 1.0;
 
 /// How good `state` is for `me` (spec §7): match lead first, then the current round's
 /// score difference (half-points), then what each side threatens to capture next.
