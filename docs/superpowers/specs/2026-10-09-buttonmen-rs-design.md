@@ -109,9 +109,10 @@ Deux axes indépendants :
 pub enum DieShape {
     Fixed(u8),
     Swing(SwingLetter),               // P R S T U V W X Y Z
-    Option(u8, u8),
-    Twin(Box<DieShape>, Box<DieShape>),
+    Option(u8, u8),                   // notation (a/b)
+    Twin(TwinPart, TwinPart),         // notation (a,b) ; une moitié = nombre ou lettre Swing
 }
+pub enum TwinPart { Fixed(u8), Swing(SwingLetter) }
 
 pub struct Die {
     pub id: DieId,
@@ -125,9 +126,9 @@ pub struct Die {
 
 Bornes Swing (source `BMDieSwing.php`) : P 1–30, R 2–16, S 6–20, T 2–12, U 8–30, V 6–12, W 4–12, X 4–20, Y 1–20, Z 4–30.
 
-Un Twin a deux sous-dés : sa taille est la somme des tailles, sa valeur la somme des deux jets.
+Un Twin a deux sous-dés : sa taille est la somme des tailles, sa valeur la somme des deux jets, sa valeur minimale 2. Tous les dés Swing d'un même bouton qui portent la même lettre ont la même taille : le choix se fait par lettre, pas par dé.
 
-Le parseur de recettes (`button-data`) lit la notation buttonweavers (`p(4) s(10) (X) (6,10) z(4,4)`…) et la convertit en `Vec<Die>`. Il refuse toute compétence inconnue avec une erreur typée ; ces boutons apparaissent comme « non jouables » dans le client au lieu d'être joués avec des règles fausses.
+Le parseur de recettes (`button-data`) lit la notation buttonweavers (`p(4) s(10) (X) (6/10) z(4,4) (X,X)`…) et la convertit en `Vec<Die>`. Il refuse toute compétence inconnue avec une erreur typée ; ces boutons apparaissent comme « non jouables » dans le client au lieu d'être joués avec des règles fausses.
 
 ### 5.3 Actions et attente
 
@@ -144,13 +145,14 @@ pub enum WaitingFor {
 }
 
 pub enum Action {
-    SpecifyDice { choices: Vec<(DieId, Sides)> },
+    SpecifyDice { choice: SpecChoice },   // tailles par lettre Swing + face retenue par dé Option
     ChooseReserve { die: Option<DieId> },
     FocusTurnDown { dice: Vec<(DieId, u8)> },
     ChanceReroll { die: DieId },
     PassInitiative,
     Attack { kind: AttackKind, attackers: Vec<DieId>, targets: Vec<DieId> },
-    FireAdjust { fire_dice: Vec<(DieId, u8)> },
+    FireTurnDown { fire: Vec<(DieId, u8)>, boosts: Vec<(DieId, u8)> }, // montants retirés / ajoutés
+    CancelFire,
     Pass,
     Surrender,
 }
@@ -164,7 +166,8 @@ API publique :
 pub fn new_game(buttons: [ButtonRecipe; 2], seed: u64, config: MatchConfig) -> GameState;
 pub fn apply(state: &GameState, player: PlayerId, action: Action)
     -> Result<(GameState, Vec<GameEvent>), RuleError>;
-pub fn legal_actions(state: &GameState, player: PlayerId) -> LegalActions;
+pub fn legal_actions(state: &GameState, player: PlayerId) -> LegalActions;   // description pour l'interface
+pub fn candidate_actions(state: &GameState, player: PlayerId) -> Vec<Action>; // liste concrète, toutes légales (IA, tests)
 pub fn view_for(state: &GameState, viewer: Viewer) -> GameView; // masque les Swing adverses avant révélation
 pub fn skill_info(skill: DieSkill) -> SkillInfo;                // nom + texte d'aide pour le client
 ```
@@ -222,7 +225,7 @@ Les textes de référence de chaque compétence sont recopiés et reformulés da
 - Choix Swing / Option : évaluation de quelques tailles candidates contre des tailles adverses tirées au hasard, par simulation de manches rapides (politique gloutonne).
 - Réactions d'initiative, Fire et Reserve : passent par la même recherche, puisque ce sont des `Action` comme les autres.
 - Niveaux : `Easy` (glouton, une seule couche), `Normal` (profondeur 1 + chance), `Hard` (profondeur 2, plus d'échantillons).
-- Interface : `fn choose_action(state, player, level, seed) -> Action`. Exposée en WASM et appelée depuis un Web Worker.
+- Interface : `fn choose_action(state, player, level, seed) -> Action`, qui choisit parmi `candidate_actions`. Exposée en WASM et appelée depuis un Web Worker.
 
 ## 8. Serveur (`crates/server`)
 
@@ -238,6 +241,7 @@ Les textes de référence de chaque compétence sont recopiés et reformulés da
 - React + Vite + Tailwind 4 + Framer Motion, TypeScript strict, types générés depuis les types Rust (tsify ou équivalent).
 - Écrans : **Accueil** (IA, hotseat, en ligne), **Choix des boutons** (filtre originaux / importés, recette lisible, compétences en infobulle), **Table**, **Fin de match**.
 - **Table** : deux rangées de dés (forme, taille, valeur, icônes de compétences). Le joueur sélectionne des attaquants puis des cibles ; seules les combinaisons présentes dans `legal_actions` sont surlignées et validables. Panneaux de score et de manche alimentés par le moteur.
+- **WASM** : l'état complet (`GameState`, dont le RNG) reste dans un objet WASM (`WasmMatch`) ; le client ne reçoit que des `GameView` et des événements en JSON, et n'envoie que des `Action`.
 - **`GameAdapter`** : interface unique (`state$`, `dispatch(action)`) avec trois implémentations : `LocalAdapter` (WASM, hotseat), `AiAdapter` (WASM + Worker IA), `OnlineAdapter` (WebSocket). Le composant Table ignore le mode.
 - Langue : français en v1, chaînes regroupées pour une traduction ultérieure.
 
