@@ -74,6 +74,7 @@ dependencies = [
 name = "buttonmen-wasm"
 version = "0.1.0"
 dependencies = [
+ "buttonmen-ai",
  "buttonmen-data",
  "buttonmen-engine",
  "console_error_panic_hook",

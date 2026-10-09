@@ -53,3 +53,14 @@ impl WasmMatch {
         bridge::state_json(&self.state)
     }
 }
+
+/// The AI's move, computed from a saved state (`WasmMatch::state_json`); runs in a Web Worker.
+#[wasm_bindgen]
+pub fn ai_choose_action(
+    state_json: &str,
+    player_json: &str,
+    level_json: &str,
+    seed: u32,
+) -> Result<String, JsError> {
+    bridge::ai_action(state_json, player_json, level_json, seed).map_err(js)
+}

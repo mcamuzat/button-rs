@@ -1,3 +1,4 @@
+use buttonmen_ai::{Level, choose_action};
 use buttonmen_data::{original_buttons, parse_buttonweavers_json, parse_recipe};
 use buttonmen_engine::{
     Action, Button, DieSkill, GameEvent, GameState, MatchConfig, PlayerId, RuleError, Viewer,
@@ -95,6 +96,25 @@ pub fn state_json(state: &GameState) -> String {
     to_json(state)
 }
 
+/// The AI's action for `player` in a state saved with `state_json` (JSON `null` when
+/// that player has nothing to do).
+pub fn ai_action(
+    state_json: &str,
+    player_json: &str,
+    level_json: &str,
+    seed: u32,
+) -> Result<String, String> {
+    let state: GameState = parse(state_json)?;
+    let player: PlayerId = parse(player_json)?;
+    let level: Level = parse(level_json)?;
+    Ok(to_json(&choose_action(
+        &state,
+        player,
+        level,
+        u64::from(seed),
+    )))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,5 +169,20 @@ mod tests {
         assert_eq!(catalog.as_array().unwrap().len(), 20);
         let skills: serde_json::Value = serde_json::from_str(&skills()).unwrap();
         assert_eq!(skills.as_array().unwrap().len(), 15);
+    }
+
+    #[test]
+    fn the_ai_answers_from_a_saved_state() {
+        let state = new_match(SETUP).unwrap();
+        let saved = state_json(&state);
+        let action = ai_action(&saved, r#""Two""#, r#""Normal""#, 5).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&action).unwrap();
+        assert_eq!(parsed["type"], "SpecifyDice");
+        // The answer is a legal action for that state.
+        let mut state = state;
+        let out: serde_json::Value =
+            serde_json::from_str(&apply(&mut state, r#""Two""#, &action).unwrap()).unwrap();
+        assert_eq!(out["type"], "Applied");
+        assert!(ai_action(&saved, r#""Two""#, r#""Godlike""#, 5).is_err());
     }
 }

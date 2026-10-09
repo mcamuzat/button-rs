@@ -9,11 +9,12 @@ license.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-ts = ["dep:ts-rs", "buttonmen-engine/ts", "buttonmen-data/ts"]
+ts = ["dep:ts-rs", "buttonmen-engine/ts", "buttonmen-data/ts", "buttonmen-ai/ts"]
 
 [dependencies]
 buttonmen-engine = { workspace = true }
 buttonmen-data = { workspace = true }
+buttonmen-ai = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 ts-rs = { workspace = true, optional = true }
