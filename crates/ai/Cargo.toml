@@ -1,0 +1,17 @@
+[package]
+name = "buttonmen-ai"
+description = "Button Men AI: sampled expectimax on the engine, without hidden information"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+ts = ["dep:ts-rs", "buttonmen-engine/ts"]
+
+[dependencies]
+buttonmen-engine = { workspace = true }
+serde = { workspace = true }
+ts-rs = { workspace = true, optional = true }
+
+[dev-dependencies]
+buttonmen-engine = { workspace = true, features = ["testing"] }

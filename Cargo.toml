@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/engine", "crates/button-data", "crates/engine-wasm"]
+members = ["crates/engine", "crates/button-data", "crates/engine-wasm", "crates/ai"]
 resolver = "2"
 
 [workspace.package]
@@ -17,6 +17,7 @@ ts-rs = "12"
 proptest = "1"
 buttonmen-engine = { path = "crates/engine" }
 buttonmen-data = { path = "crates/button-data" }
+buttonmen-ai = { path = "crates/ai" }
 
 [profile.wasm-release]
 inherits = "release"
