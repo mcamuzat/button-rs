@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-felt: #1f5135;
+  --color-felt-dark: #163b27;
+  --color-ivory: #f6f1e4;
+  --color-ink: #1d1b16;
+  --color-gold: #d9a441;
+  --color-danger: #c4453c;
+  --font-display: Georgia, "Times New Roman", serif;
+}
+
+body {
+  @apply min-h-screen bg-felt text-ivory antialiased;
+}
