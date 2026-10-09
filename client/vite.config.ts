@@ -10,6 +10,7 @@ export default defineConfig({
   // Relative paths: the build works from any folder.
   base: "./",
   plugins: [react(), tailwindcss()],
+  worker: { format: "es" },
   server: { allowedHosts: NGROK_HOSTS },
   preview: { allowedHosts: NGROK_HOSTS },
   test: { environment: "node" },

@@ -16,6 +16,7 @@ function fakeMatch(): EngineMatch & { viewers: string[] } {
         ? JSON.stringify({ type: "Applied", events: [{ type: "Passed", player: "Two" }] })
         : JSON.stringify({ type: "Rejected", error: { type: "NotYourTurn" }, message: "ce n'est pas à ce joueur d'agir" });
     },
+    state_json: () => "{}",
     free: vi.fn(),
   };
 }
@@ -54,6 +55,13 @@ describe("LocalAdapter", () => {
     };
     const adapter = new LocalAdapter(engine);
     expect(adapter.dispatch("Two", { type: "Pass" })).toBe("invalid type: null");
+  });
+
+  it("uses the handoff screen and seat names of a shared screen", () => {
+    const adapter = new LocalAdapter(fakeMatch());
+    expect(adapter.handoff).toBe(true);
+    expect(adapter.names).toEqual({ One: "Joueur 1", Two: "Joueur 2" });
+    expect(adapter.getSnapshot().thinking).toBe(false);
   });
 
   it("frees the engine on dispose", () => {
