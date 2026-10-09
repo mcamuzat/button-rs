@@ -260,3 +260,31 @@ pub(crate) fn start_round(state: &mut GameState, events: &mut Vec<GameEvent>) {
     }
     initiative::determine(state, events);
 }
+
+/// Handles `Action::ChooseReserve` (R 6.11): the chosen die joins play for the rest of
+/// the match and stops being a Reserve die.
+pub(crate) fn choose_reserve(
+    state: &mut GameState,
+    player: PlayerId,
+    die: Option<DieId>,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuleError> {
+    match state.waiting_for {
+        WaitingFor::ChooseReserve { player: p } if p == player => {}
+        WaitingFor::ChooseReserve { .. } => return Err(RuleError::NotYourTurn),
+        _ => return Err(RuleError::WrongPhase),
+    }
+    if let Some(id) = die {
+        let slot = state
+            .player_mut(player)
+            .slots
+            .iter_mut()
+            .find(|s| s.id == id && !s.in_play && s.spec.skills.has(DieSkill::Reserve))
+            .ok_or(RuleError::InvalidReserve { die: id })?;
+        slot.in_play = true;
+        slot.spec.skills.remove(DieSkill::Reserve);
+        events.push(GameEvent::ReserveAdded { player, die: id });
+    }
+    ask_for_choices(state, events);
+    Ok(())
+}

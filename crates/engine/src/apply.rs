@@ -21,8 +21,6 @@ pub fn apply(
         Action::SpecifyDice { choice } => {
             setup::specify_dice(&mut next, player, choice, &mut events)?
         }
-        // Wired by later tasks: initiative reactions (6), attacks and pass (8),
-        // fire (9), reserve (10).
         Action::FocusTurnDown { dice } => {
             initiative::focus_turn_down(&mut next, player, dice, &mut events)?
         }
@@ -39,8 +37,8 @@ pub fn apply(
             boosts,
         } => fire::fire_turn_down(&mut next, player, amounts, boosts, &mut events)?,
         Action::CancelFire => fire::cancel_fire(&mut next, player)?,
-        Action::ChooseReserve { .. } => {
-            return Err(RuleError::WrongPhase);
+        Action::ChooseReserve { die } => {
+            setup::choose_reserve(&mut next, player, die, &mut events)?
         }
     }
     Ok((next, events))
