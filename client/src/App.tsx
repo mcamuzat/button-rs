@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { AiAdapter } from "./adapters/AiAdapter";
 import type { GameAdapter } from "./adapters/GameAdapter";
 import { LocalAdapter } from "./adapters/LocalAdapter";
 import type { CatalogEntry } from "./engine/generated/CatalogEntry";
+import { WorkerBrain } from "./ai/brain";
 import type { DieSkill } from "./engine/generated/DieSkill";
+import type { Level } from "./engine/generated/Level";
 import type { SkillInfo } from "./engine/generated/SkillInfo";
 import { createMatch, loadCatalog, loadSkills } from "./engine/wasm";
 import { ButtonPicker } from "./screens/ButtonPicker";
@@ -10,7 +13,7 @@ import { Home } from "./screens/Home";
 import { Table } from "./screens/Table";
 import { SkillsContext } from "./table/SkillsContext";
 
-type Screen = { kind: "home" } | { kind: "pick" } | { kind: "table"; adapter: GameAdapter };
+type Screen = { kind: "home" } | { kind: "pick"; vsAi: boolean } | { kind: "table"; adapter: GameAdapter };
 
 export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: "home" });
@@ -27,7 +30,7 @@ export function App() {
       .catch((e: unknown) => setError(String(e)));
   }, []);
 
-  function start(one: CatalogEntry, two: CatalogEntry) {
+  function start(one: CatalogEntry, two: CatalogEntry, level: Level, vsAi: boolean) {
     const [seed] = crypto.getRandomValues(new Uint32Array(1));
     const engine = createMatch({
       buttons: [
@@ -37,7 +40,8 @@ export function App() {
       seed,
       max_wins: 3,
     });
-    setScreen({ kind: "table", adapter: new LocalAdapter(engine) });
+    const adapter = vsAi ? new AiAdapter(engine, new WorkerBrain(), level) : new LocalAdapter(engine);
+    setScreen({ kind: "table", adapter });
   }
 
   function leave() {
@@ -50,9 +54,19 @@ export function App() {
 
   return (
     <SkillsContext.Provider value={skills}>
-      {screen.kind === "home" && <Home onHotseat={() => setScreen({ kind: "pick" })} />}
+      {screen.kind === "home" && (
+        <Home
+          onHotseat={() => setScreen({ kind: "pick", vsAi: false })}
+          onAi={() => setScreen({ kind: "pick", vsAi: true })}
+        />
+      )}
       {screen.kind === "pick" && (
-        <ButtonPicker catalog={catalog} onStart={start} onBack={() => setScreen({ kind: "home" })} />
+        <ButtonPicker
+          catalog={catalog}
+          vsAi={screen.vsAi}
+          onStart={(one, two, level) => start(one, two, level, screen.vsAi)}
+          onBack={() => setScreen({ kind: "home" })}
+        />
       )}
       {screen.kind === "table" && <Table adapter={screen.adapter} onLeave={leave} />}
     </SkillsContext.Provider>

@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
+import { levelLabel } from "../adapters/AiAdapter";
 import type { CatalogEntry } from "../engine/generated/CatalogEntry";
+import type { Level } from "../engine/generated/Level";
 import { filterCatalog, type SourceFilter } from "./catalogFilter";
 
 interface Props {
   catalog: CatalogEntry[];
-  onStart: (one: CatalogEntry, two: CatalogEntry) => void;
+  /** Seat 2 is played by the AI. */
+  vsAi: boolean;
+  onStart: (one: CatalogEntry, two: CatalogEntry, level: Level) => void;
   onBack: () => void;
 }
 
@@ -14,7 +18,10 @@ const SOURCES: { value: SourceFilter; label: string }[] = [
   { value: "all", label: "Tous" },
 ];
 
-export function ButtonPicker({ catalog, onStart, onBack }: Props) {
+const LEVELS: Level[] = ["Easy", "Normal", "Hard"];
+
+export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
+  const [level, setLevel] = useState<Level>("Normal");
   const [query, setQuery] = useState("");
   const [source, setSource] = useState<SourceFilter>("Original");
   const [picks, setPicks] = useState<[CatalogEntry | null, CatalogEntry | null]>([null, null]);
@@ -51,7 +58,7 @@ export function ButtonPicker({ catalog, onStart, onBack }: Props) {
             onClick={() => setSeat(i)}
             className={`rounded-xl p-4 text-left ${seat === i ? "bg-gold text-ink" : "bg-felt-dark"}`}
           >
-            <span className="text-sm opacity-70">Joueur {i + 1}</span>
+            <span className="text-sm opacity-70">{vsAi ? (i === 0 ? "Vous" : "IA") : `Joueur ${i + 1}`}</span>
             <span className="block font-display text-xl">{picks[i]?.name ?? "—"}</span>
             <span className="block font-mono text-sm">{picks[i]?.recipe ?? ""}</span>
           </button>
@@ -76,13 +83,24 @@ export function ButtonPicker({ catalog, onStart, onBack }: Props) {
               {s.label}
             </button>
           ))}
+        {vsAi &&
+          LEVELS.map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLevel(l)}
+              className={`rounded-lg px-3 py-2 ${level === l ? "bg-gold text-ink" : "bg-felt-dark"}`}
+            >
+              {levelLabel(l)}
+            </button>
+          ))}
         <button type="button" onClick={pickRandom} className="rounded-lg bg-felt-dark px-3 py-2">
           Au hasard
         </button>
         <button
           type="button"
           disabled={!picks[0] || !picks[1]}
-          onClick={() => picks[0] && picks[1] && onStart(picks[0], picks[1])}
+          onClick={() => picks[0] && picks[1] && onStart(picks[0], picks[1], level)}
           className="rounded-lg bg-gold px-4 py-2 font-semibold text-ink disabled:opacity-40"
         >
           Jouer

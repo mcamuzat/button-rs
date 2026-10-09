@@ -7,7 +7,6 @@ import { ActionArea } from "../table/ActionArea";
 import { Handoff } from "../table/Handoff";
 import { MatchEnd } from "../table/MatchEnd";
 import { PlayerArea } from "../table/PlayerArea";
-import { seatLabel } from "../table/seats";
 import { selectableDice, toggle, type Selection } from "../table/selection";
 
 interface Props {
@@ -18,7 +17,7 @@ interface Props {
 const EMPTY: Selection = { attackers: [], targets: [] };
 
 export function Table({ adapter, onLeave }: Props) {
-  const { view, version } = useGame(adapter);
+  const { view, version, thinking, failure } = useGame(adapter);
   const [selection, setSelection] = useState<Selection>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const seat = view.viewer.type === "Seat" ? view.viewer.player : null;
@@ -34,7 +33,7 @@ export function Table({ adapter, onLeave }: Props) {
   // Hotseat: before a secret choice, the screen waits for the right player.
   const [readySeat, setReadySeat] = useState<string | null>(null);
   const secret = view.legal.type === "SpecifyDice";
-  const needsHandoff = secret && seat !== null && readySeat !== `${view.round}-${seat}`;
+  const needsHandoff = adapter.handoff && secret && seat !== null && readySeat !== `${view.round}-${seat}`;
 
   const attacks = view.legal.type === "Attack" ? view.legal.attacks : [];
   const selectable = selectableDice(attacks, selection);
@@ -53,7 +52,7 @@ export function Table({ adapter, onLeave }: Props) {
     return (
       <PlayerArea
         player={p}
-        label={seatLabel(p.seat)}
+        label={adapter.names[p.seat]}
         acting={view.actors.includes(p.seat)}
         selectable={mine ? selectable.attackers : selectable.targets}
         selected={mine ? selection.attackers : selection.targets}
@@ -79,15 +78,28 @@ export function Table({ adapter, onLeave }: Props) {
         </div>
       </header>
       {area(two)}
-      <ActionArea key={version} view={view} act={act} selection={selection} onClearSelection={() => setSelection(EMPTY)} />
+      <ActionArea
+        key={version}
+        view={view}
+        act={act}
+        selection={selection}
+        onClearSelection={() => setSelection(EMPTY)}
+        names={adapter.names}
+        thinking={thinking}
+      />
       {area(one)}
       {error && (
         <p role="alert" className="rounded-lg bg-danger/90 px-4 py-2">
           {error}
         </p>
       )}
-      {needsHandoff && seat && <Handoff seat={seat} onReady={() => setReadySeat(`${view.round}-${seat}`)} />}
-      <MatchEnd view={view} onLeave={onLeave} />
+      {failure && (
+        <p role="alert" className="rounded-lg bg-danger/90 px-4 py-2">
+          L'IA n'a pas pu jouer : {failure}
+        </p>
+      )}
+      {needsHandoff && seat && <Handoff name={adapter.names[seat]} onReady={() => setReadySeat(`${view.round}-${seat}`)} />}
+      <MatchEnd view={view} names={adapter.names} onLeave={onLeave} />
     </main>
   );
 }

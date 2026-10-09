@@ -1,10 +1,10 @@
 import type { Action } from "../engine/generated/Action";
 import type { GameView } from "../engine/generated/GameView";
+import type { PlayerId } from "../engine/generated/PlayerId";
 import { AttackPanel } from "./AttackPanel";
 import { FirePanel } from "./FirePanel";
 import { InitiativePanel } from "./InitiativePanel";
 import { ReservePanel } from "./ReservePanel";
-import { seatLabel } from "./seats";
 import type { Selection } from "./selection";
 import { SpecifyDicePanel } from "./SpecifyDicePanel";
 
@@ -13,12 +13,14 @@ interface Props {
   act: (action: Action) => void;
   selection: Selection;
   onClearSelection: () => void;
+  names: Record<PlayerId, string>;
+  thinking: boolean;
 }
 
 /** The decision the acting player faces, chosen from `view.legal` (engine-provided). */
-export function ActionArea({ view, act, selection, onClearSelection }: Props) {
+export function ActionArea({ view, act, selection, onClearSelection, names, thinking }: Props) {
   const legal = view.legal;
-  const who = view.viewer.type === "Seat" ? seatLabel(view.viewer.player) : "";
+  const who = view.viewer.type === "Seat" ? names[view.viewer.player] : "";
   // Recipe notation of any die id, from the engine-provided views.
   const notation = (id: number) => {
     for (const p of view.players) {
@@ -55,13 +57,17 @@ export function ActionArea({ view, act, selection, onClearSelection }: Props) {
       body = <FirePanel fire={legal.fire} boosts={legal.boosts} notation={notation} act={act} />;
       break;
     case "Wait":
+      body = thinking ? <span className="animate-pulse">L'IA réfléchit…</span> : null;
+      break;
     case "GameOver":
       body = null;
       break;
   }
   return (
     <section className="rounded-2xl bg-ink/30 p-4">
-      {who && <p className="mb-2 font-display text-lg">À {who}</p>}
+      {who && legal.type !== "Wait" && legal.type !== "GameOver" && (
+        <p className="mb-2 font-display text-lg">À {who}</p>
+      )}
       {body}
     </section>
   );

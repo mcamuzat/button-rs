@@ -1,7 +1,15 @@
 import type { GameView } from "../engine/generated/GameView";
-import { seatLabel } from "./seats";
+import type { PlayerId } from "../engine/generated/PlayerId";
 
-export function MatchEnd({ view, onLeave }: { view: GameView; onLeave: () => void }) {
+export function MatchEnd({
+  view,
+  names,
+  onLeave,
+}: {
+  view: GameView;
+  names: Record<PlayerId, string>;
+  onLeave: () => void;
+}) {
   if (view.waiting_for.type !== "GameOver") return null;
   const { winner, reason } = view.waiting_for.result;
   const champion = view.players.find((p) => p.seat === winner);
@@ -9,7 +17,7 @@ export function MatchEnd({ view, onLeave }: { view: GameView; onLeave: () => voi
   return (
     <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-felt-dark/95">
       <p className="font-display text-4xl">
-        {seatLabel(winner)} gagne avec {champion?.button}
+        {names[winner]} gagne avec {champion?.button}
       </p>
       <p className="text-ivory/80">
         {reason === "Surrender" ? "Par abandon." : `${one.record.wins} manche(s) à ${two.record.wins}.`}

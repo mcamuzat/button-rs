@@ -1,11 +1,12 @@
 interface Props {
   onHotseat: () => void;
+  onAi: () => void;
 }
 
-export function Home({ onHotseat }: Props) {
+export function Home({ onHotseat, onAi }: Props) {
   const modes = [
     { title: "Deux joueurs, même écran", text: "Passez-vous l'appareil à chaque tour.", onClick: onHotseat },
-    { title: "Contre l'IA", text: "Bientôt.", onClick: undefined },
+    { title: "Contre l'IA", text: "Facile, Normal ou Difficile.", onClick: onAi },
     { title: "En ligne", text: "Bientôt.", onClick: undefined },
   ];
   return (
