@@ -3,7 +3,7 @@ use crate::error::RuleError;
 use crate::event::GameEvent;
 use crate::ids::PlayerId;
 use crate::state::{GameState, WaitingFor};
-use crate::{initiative, resolve, round, setup};
+use crate::{fire, initiative, resolve, round, setup};
 
 /// The rules reducer: a new state and what happened, or why the action is refused.
 pub fn apply(
@@ -34,7 +34,12 @@ pub fn apply(
             resolve::declare_attack(&mut next, player, attack, &mut events)?
         }
         Action::Pass => round::pass(&mut next, player, &mut events)?,
-        Action::ChooseReserve { .. } | Action::FireTurnDown { .. } | Action::CancelFire => {
+        Action::FireTurnDown {
+            fire: amounts,
+            boosts,
+        } => fire::fire_turn_down(&mut next, player, amounts, boosts, &mut events)?,
+        Action::CancelFire => fire::cancel_fire(&mut next, player)?,
+        Action::ChooseReserve { .. } => {
             return Err(RuleError::WrongPhase);
         }
     }

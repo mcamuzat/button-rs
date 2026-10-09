@@ -20,7 +20,14 @@ pub(crate) fn declare_attack(
         WaitingFor::Attack { .. } => return Err(RuleError::NotYourTurn),
         _ => return Err(RuleError::WrongPhase),
     }
-    check_attack(state, player, &attack).map_err(|reason| RuleError::IllegalAttack { reason })?;
+    if let Err(reason) = check_attack(state, player, &attack) {
+        // R 6.3: Fire may still make a Power or Skill attack legal.
+        if crate::fire::can_help(state, player, &attack) {
+            state.waiting_for = WaitingFor::AdjustFire { player, attack };
+            return Ok(());
+        }
+        return Err(RuleError::IllegalAttack { reason });
+    }
     resolve_attack(state, player, attack, events);
     round::end_turn(state, player, events);
     Ok(())

@@ -6,6 +6,7 @@ mod attack;
 pub mod die;
 pub mod error;
 pub mod event;
+mod fire;
 mod hooks;
 pub mod ids;
 mod initiative;

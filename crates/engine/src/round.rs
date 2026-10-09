@@ -47,7 +47,10 @@ pub(crate) fn pass(
         WaitingFor::Attack { .. } => return Err(RuleError::NotYourTurn),
         _ => return Err(RuleError::WrongPhase),
     }
-    if !attack::possible_attacks(state, player).is_empty() {
+    // R 4.1 + R 6.3: an attack that Fire makes possible also forbids passing.
+    if !attack::possible_attacks(state, player).is_empty()
+        || !crate::fire::assisted_attacks(state, player).is_empty()
+    {
         return Err(RuleError::PassNotAllowed);
     }
     state.consecutive_passes += 1;

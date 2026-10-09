@@ -147,8 +147,8 @@ fn subsets(dice: &[&Die]) -> Vec<Vec<DieId>> {
         .collect()
 }
 
-/// Every legal attack for `player` right now, without Fire assistance.
-pub(crate) fn possible_attacks(state: &GameState, player: PlayerId) -> Vec<DeclaredAttack> {
+/// Every attack worth checking for `player` right now (not filtered for legality).
+pub(crate) fn attack_shapes(state: &GameState, player: PlayerId) -> Vec<DeclaredAttack> {
     let mine: Vec<&Die> = state
         .player(player)
         .active
@@ -191,6 +191,12 @@ pub(crate) fn possible_attacks(state: &GameState, player: PlayerId) -> Vec<Decla
             });
         }
     }
-    candidates.retain(|attack| check_attack(state, player, attack).is_ok());
     candidates
+}
+
+/// Every legal attack for `player` right now, without Fire assistance.
+pub(crate) fn possible_attacks(state: &GameState, player: PlayerId) -> Vec<DeclaredAttack> {
+    let mut attacks = attack_shapes(state, player);
+    attacks.retain(|attack| check_attack(state, player, attack).is_ok());
+    attacks
 }
