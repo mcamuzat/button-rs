@@ -59,6 +59,14 @@ fn pool() -> Vec<Vec<DieSpec>> {
                 TwinPart::Swing(SwingLetter::X),
             )),
         ],
+        // Fire with Konstant on the same button, Trip facing a large Konstant (review findings).
+        vec![
+            fixed(6).with(Konstant),
+            fixed(4),
+            fixed(10).with(Fire),
+            fixed(8).with(Trip),
+            fixed(20).with(Konstant),
+        ],
     ]
 }
 
@@ -171,12 +179,12 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
 
     #[test]
-    fn random_matches_end_and_keep_invariants(a in 0usize..6, b in 0usize..6, seed in any::<u64>()) {
+    fn random_matches_end_and_keep_invariants(a in 0usize..7, b in 0usize..7, seed in any::<u64>()) {
         play(a, b, seed)?;
     }
 
     #[test]
-    fn surrender_is_always_accepted(a in 0usize..6, b in 0usize..6, seed in any::<u64>()) {
+    fn surrender_is_always_accepted(a in 0usize..7, b in 0usize..7, seed in any::<u64>()) {
         let pool = pool();
         let state = new_game([button("A", pool[a].clone()), button("B", pool[b].clone())], seed, MatchConfig::default());
         prop_assert!(apply(&state, PlayerId::Two, Action::Surrender).is_ok());

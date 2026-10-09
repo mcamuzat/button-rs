@@ -275,3 +275,33 @@ fn dizzy_dice_cannot_attack() {
         Err(AttackError::Dizzy { die: focus })
     );
 }
+
+#[test]
+fn trip_against_konstant_needs_a_real_chance() {
+    // R 6.14 (BMAttackTrip::is_disabled_by_konstant): Konstant dice keep their value.
+    let s = table(
+        vec![
+            die(4, 2).with(DieSkill::Trip),
+            die(4, 1).with(DieSkill::Trip).with(DieSkill::Konstant),
+        ],
+        vec![
+            die(10, 8).with(DieSkill::Konstant),
+            die(10, 4).with(DieSkill::Konstant),
+            twin(4, 4, 5),
+            die(6, 6),
+        ],
+    );
+    // Konstant target showing 8 can never be beaten by a d4.
+    assert_eq!(
+        check(&s, Trip, &[0], &[0]),
+        Err(AttackError::ValuesDoNotMatch)
+    );
+    assert_eq!(check(&s, Trip, &[0], &[1]), Ok(()));
+    // A Konstant Trip die stays at 1: it can never beat a twin (minimum 2)…
+    assert_eq!(
+        check(&s, Trip, &[1], &[2]),
+        Err(AttackError::ValuesDoNotMatch)
+    );
+    // …but a d6 can roll a 1.
+    assert_eq!(check(&s, Trip, &[1], &[3]), Ok(()));
+}

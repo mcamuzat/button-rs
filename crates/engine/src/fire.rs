@@ -1,9 +1,11 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::action::{AttackKind, DeclaredAttack};
-use crate::attack::{attack_shapes, check_attack, skill_sums};
+use crate::attack::{attack_shapes, check_attack};
+use crate::die::Die;
 use crate::error::{AttackError, FireError, RuleError};
 use crate::event::GameEvent;
+use crate::hooks;
 use crate::ids::{DieId, PlayerId};
 use crate::resolve;
 use crate::round;
@@ -40,48 +42,85 @@ pub(crate) fn attacker_room(
         .collect()
 }
 
-/// R 6.3: is `attack` a Power or Skill attack that fails only on values, and that
-/// Fire can make legal?
-pub(crate) fn can_help(state: &GameState, player: PlayerId, attack: &DeclaredAttack) -> bool {
-    if !matches!(attack.kind, AttackKind::Power | AttackKind::Skill) {
-        return false;
-    }
-    if check_attack(state, player, attack) != Err(AttackError::ValuesDoNotMatch) {
-        return false;
+/// R 6.3: the smallest boosts on the attackers, paid by Fire dice, that make `attack`
+/// legal — or `None` when Fire cannot. Only Power and Skill attacks that fail on values
+/// alone qualify. Each attacker's options are computed on a raised copy of the die, so a
+/// Konstant attacker (counted with either sign, R 6.5) is handled exactly.
+pub(crate) fn plan_boosts(
+    state: &GameState,
+    player: PlayerId,
+    attack: &DeclaredAttack,
+) -> Option<Vec<(DieId, u8)>> {
+    if !matches!(attack.kind, AttackKind::Power | AttackKind::Skill)
+        || check_attack(state, player, attack) != Err(AttackError::ValuesDoNotMatch)
+    {
+        return None;
     }
     let capacity: u32 = fire_dice(state, player, attack)
         .iter()
         .map(|(_, g)| u32::from(*g))
         .sum();
-    let room: u32 = attacker_room(state, player, attack)
-        .iter()
-        .map(|(_, r)| u32::from(*r))
-        .sum();
-    let budget = i32::try_from(capacity.min(room)).unwrap_or(i32::MAX);
-    let me = state.player(player);
-    let target = state
-        .player(player.other())
-        .die(attack.targets[0])
-        .expect("checked by check_attack")
-        .value;
-    let target = i32::from(target);
-    match attack.kind {
-        AttackKind::Power => {
-            let a = i32::from(me.die(attack.attackers[0]).expect("checked").value);
-            target - a <= budget
-        }
-        AttackKind::Skill => {
-            let attackers: Vec<_> = attack
-                .attackers
-                .iter()
-                .filter_map(|&id| me.die(id))
-                .collect();
-            skill_sums(&attackers)
-                .iter()
-                .any(|s| *s < target && target - s <= budget)
-        }
-        AttackKind::Shadow | AttackKind::Speed | AttackKind::Trip | AttackKind::Berserk => false,
+    if capacity == 0 {
+        return None;
     }
+    let me = state.player(player);
+    let attackers: Vec<&Die> = attack
+        .attackers
+        .iter()
+        .filter_map(|&id| me.die(id))
+        .collect();
+    let target = i32::from(
+        state
+            .player(player.other())
+            .die(attack.targets[0])
+            .expect("checked by check_attack")
+            .value,
+    );
+    // (sum reached, boost spent) -> one way to get there.
+    let mut reachable: BTreeMap<(i32, u32), Vec<(DieId, u8)>> =
+        BTreeMap::from([((0, 0), Vec::new())]);
+    for die in &attackers {
+        let mut next = BTreeMap::new();
+        for ((sum, spent), boosts) in &reachable {
+            for boost in 0..=(die.max() - die.value) {
+                let spent = spent + u32::from(boost);
+                if spent > capacity {
+                    break;
+                }
+                let mut raised = (*die).clone();
+                raised.value += boost;
+                let values: Vec<i32> = match attack.kind {
+                    AttackKind::Power => vec![i32::from(raised.value)],
+                    _ => hooks::skill_values(&raised),
+                };
+                for v in values {
+                    next.entry((sum + v, spent)).or_insert_with(|| {
+                        let mut boosts = boosts.clone();
+                        if boost > 0 {
+                            boosts.push((die.id, boost));
+                        }
+                        boosts
+                    });
+                }
+            }
+        }
+        reachable = next;
+    }
+    let reaches = |sum: i32| match attack.kind {
+        // R 4.2: Power needs at least the target's value.
+        AttackKind::Power => sum >= target,
+        _ => sum == target,
+    };
+    reachable
+        .into_iter()
+        .filter(|((sum, spent), _)| *spent > 0 && reaches(*sum))
+        .min_by_key(|((_, spent), _)| *spent)
+        .map(|(_, boosts)| boosts)
+}
+
+/// R 6.3: can Fire make `attack` legal?
+pub(crate) fn can_help(state: &GameState, player: PlayerId, attack: &DeclaredAttack) -> bool {
+    plan_boosts(state, player, attack).is_some()
 }
 
 /// Attacks that are possible only with Fire assistance (they count for R 4.1).

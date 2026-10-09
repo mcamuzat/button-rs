@@ -163,11 +163,12 @@ fn chance_reroll_gives_initiative_only_when_lower() {
                 assert_eq!(after.initiative, Some(Two));
                 gained += 1;
             }
-            3..=6 => {
-                assert_eq!(after.initiative, Some(One));
+            // R 6.2: a tie is a failed attempt (BMGame::react_to_initiative_chance).
+            2..=6 => {
+                assert_eq!(after.initiative, Some(One), "value {value}");
                 kept += 1;
             }
-            _ => {} // 2: tie, decided by a coin (R 3.4)
+            _ => unreachable!(),
         }
     }
     assert!(gained > 0 && kept > 0);

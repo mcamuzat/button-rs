@@ -107,7 +107,21 @@ fn values_allow(kind: AttackKind, p: &Participants) -> bool {
             first_target.value >= first_attacker.value && first_target.value <= first_attacker.max()
         }
         // R 6.14: illegal only without any chance to capture.
-        AttackKind::Trip => first_attacker.max() >= first_target.min(),
+        // R 6.14 + R 6.5: a Konstant die keeps its value when the Trip rerolls it
+        // (BMAttackTrip::is_disabled_by_konstant).
+        AttackKind::Trip => {
+            let best = if hooks::rerolls(first_attacker) {
+                first_attacker.max()
+            } else {
+                first_attacker.value
+            };
+            let lowest = if hooks::rerolls(first_target) {
+                first_target.min()
+            } else {
+                first_target.value
+            };
+            best >= lowest
+        }
         // R 6.9 / R 6.1.
         AttackKind::Speed | AttackKind::Berserk => {
             p.targets.iter().map(|t| u32::from(t.value)).sum::<u32>()

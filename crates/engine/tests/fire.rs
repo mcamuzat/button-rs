@@ -3,8 +3,8 @@ mod common;
 use PlayerId::{One, Two};
 use buttonmen_engine::testing::{attack_state, die, id};
 use buttonmen_engine::{
-    Action, AttackError, AttackKind, DeclaredAttack, DieSkill, FireError, GameState, PlayerId,
-    RuleError, WaitingFor,
+    Action, AttackError, AttackKind, DeclaredAttack, DieSkill, FireError, GameState, LegalActions,
+    PlayerId, RuleError, WaitingFor, candidate_actions, legal_actions,
 };
 use common::{err, ok};
 
@@ -185,4 +185,45 @@ fn pass_refused_when_only_fire_assisted_attack_exists() {
         One,
     );
     assert_eq!(err(&s, One, Action::Pass), RuleError::PassNotAllowed);
+}
+
+#[test]
+fn fire_never_offers_an_attack_it_cannot_complete() {
+    // Review finding: k(6)=2 and (4)=4 make sums {6, 2}; reaching 3 would need lowering
+    // the Konstant die, which Fire cannot do (R 6.3 only raises attackers).
+    let s = attack_state(
+        vec![
+            die(6, 2).with(DieSkill::Konstant),
+            die(4, 4),
+            die(10, 8).with(DieSkill::Fire),
+        ],
+        vec![die(6, 3).with(DieSkill::Stealth)],
+        One,
+    );
+    let LegalActions::Attack { attacks, can_pass } = legal_actions(&s, One) else {
+        panic!()
+    };
+    assert!(attacks.is_empty(), "{attacks:?}");
+    assert!(can_pass);
+}
+
+#[test]
+fn fire_candidates_complete_every_offered_assisted_attack() {
+    // k(6)=2 + (6)=3 reach {5, 1}; 7 needs +2 on either die.
+    let s = attack_state(
+        vec![
+            die(6, 2).with(DieSkill::Konstant),
+            die(6, 3),
+            die(10, 8).with(DieSkill::Fire),
+        ],
+        vec![die(10, 7), die(20, 20)],
+        One,
+    );
+    let attack = declared(&s, AttackKind::Skill, &[0, 1], &[0]);
+    let (s, _) = ok(&s, One, Action::Attack { attack });
+    assert!(
+        candidate_actions(&s, One)
+            .iter()
+            .any(|a| matches!(a, Action::FireTurnDown { .. }))
+    );
 }

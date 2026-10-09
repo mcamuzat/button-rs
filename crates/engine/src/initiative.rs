@@ -172,9 +172,8 @@ pub(crate) fn chance_reroll(
     );
     let (gains, by_coin) = match order {
         Ordering::Less => (true, false),
-        Ordering::Greater => (false, false),
-        // R 3.4: a tie is settled by a coin toss.
-        Ordering::Equal => (state.rng.coin(), true),
+        // R 6.2: a tie is a failed attempt (BMGame::react_to_initiative_chance).
+        Ordering::Greater | Ordering::Equal => (false, false),
     };
     if gains {
         state.initiative = Some(player);

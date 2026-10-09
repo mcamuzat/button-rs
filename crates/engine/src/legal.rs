@@ -282,8 +282,20 @@ pub fn candidate_actions(state: &GameState, player: PlayerId) -> Vec<Action> {
             }
             actions
         }
-        LegalActions::AdjustFire { fire, boosts, .. } => {
+        LegalActions::AdjustFire {
+            attack,
+            fire,
+            boosts,
+        } => {
             let mut actions = vec![Action::CancelFire];
+            // The exact plan first, then greedy spreads of every total.
+            if let Some(plan) = fire::plan_boosts(state, player, &attack) {
+                let total = plan.iter().map(|(_, b)| *b).sum();
+                actions.push(Action::FireTurnDown {
+                    fire: spread(total, &fire),
+                    boosts: plan,
+                });
+            }
             actions.extend(fire_candidates(&fire, &boosts));
             actions
         }
