@@ -1,0 +1,154 @@
+use crate::action::{AttackKind, DeclaredAttack};
+use crate::attack::check_attack;
+use crate::error::RuleError;
+use crate::event::GameEvent;
+use crate::hooks;
+use crate::ids::{DieId, PlayerId};
+use crate::round;
+use crate::skill::DieSkill;
+use crate::state::{CapturedDie, GameState, WaitingFor};
+
+/// Handles `Action::Attack`.
+pub(crate) fn declare_attack(
+    state: &mut GameState,
+    player: PlayerId,
+    attack: DeclaredAttack,
+    events: &mut Vec<GameEvent>,
+) -> Result<(), RuleError> {
+    match state.waiting_for {
+        WaitingFor::Attack { player: p } if p == player => {}
+        WaitingFor::Attack { .. } => return Err(RuleError::NotYourTurn),
+        _ => return Err(RuleError::WrongPhase),
+    }
+    check_attack(state, player, &attack).map_err(|reason| RuleError::IllegalAttack { reason })?;
+    resolve_attack(state, player, attack, events);
+    round::end_turn(state, player, events);
+    Ok(())
+}
+
+/// R 4.4 + R 6.1 + R 6.14: carries out an attack already known to be legal.
+pub(crate) fn resolve_attack(
+    state: &mut GameState,
+    player: PlayerId,
+    attack: DeclaredAttack,
+    events: &mut Vec<GameEvent>,
+) {
+    events.push(GameEvent::Attacked {
+        player,
+        attack: attack.clone(),
+    });
+    state.consecutive_passes = 0;
+    match attack.kind {
+        AttackKind::Trip => resolve_trip(
+            state,
+            player,
+            attack.attackers[0],
+            attack.targets[0],
+            events,
+        ),
+        AttackKind::Power
+        | AttackKind::Skill
+        | AttackKind::Shadow
+        | AttackKind::Speed
+        | AttackKind::Berserk => {
+            for &target in &attack.targets {
+                capture(state, player, target, &attack.attackers, events);
+            }
+            for &attacker in &attack.attackers {
+                if attack.kind == AttackKind::Berserk {
+                    shrink(state, player, attacker, events);
+                }
+                reroll(state, player, attacker, events);
+            }
+        }
+    }
+}
+
+/// R 4.4: the target joins the attacker's score pile.
+fn capture(
+    state: &mut GameState,
+    player: PlayerId,
+    target: DieId,
+    attackers: &[DieId],
+    events: &mut Vec<GameEvent>,
+) {
+    let defender = player.other();
+    let scoring = {
+        let attacker_dice: Vec<_> = attackers
+            .iter()
+            .filter_map(|&a| state.player(player).die(a))
+            .collect();
+        let target_die = state.player(defender).die(target).expect("legal target");
+        hooks::capture_scoring(&attacker_dice, target_die)
+    };
+    let index = state
+        .player(defender)
+        .active
+        .iter()
+        .position(|d| d.id == target)
+        .expect("legal target");
+    let die = state.player_mut(defender).active.remove(index);
+    state
+        .player_mut(player)
+        .captured
+        .push(CapturedDie { die, scoring });
+    events.push(GameEvent::DieCaptured {
+        by: player,
+        die: target,
+    });
+}
+
+fn reroll(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<GameEvent>) {
+    let GameState { players, rng, .. } = state;
+    if let Some(die) = players[owner.index()].die_mut(id) {
+        hooks::reroll(die, rng);
+        events.push(GameEvent::DieRerolled {
+            die: id,
+            value: die.value,
+        });
+    }
+}
+
+/// R 6.1: half the sides (rounded up), and the die stops being Berserk.
+fn shrink(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<GameEvent>) {
+    let die = state.player_mut(owner).die_mut(id).expect("legal attacker");
+    die.sides = die.sides.halved();
+    die.skills.remove(DieSkill::Berserk);
+    events.push(GameEvent::DieShrunk {
+        die: id,
+        sides: die.sides,
+    });
+}
+
+/// R 6.14: both dice are rerolled; the target is captured if the Trip die shows at least as much.
+fn resolve_trip(
+    state: &mut GameState,
+    player: PlayerId,
+    attacker: DieId,
+    target: DieId,
+    events: &mut Vec<GameEvent>,
+) {
+    reroll(state, player, attacker, events);
+    reroll(state, player.other(), target, events);
+    let attacker_value = state
+        .player(player)
+        .die(attacker)
+        .expect("legal attacker")
+        .value;
+    let target_value = state
+        .player(player.other())
+        .die(target)
+        .expect("legal target")
+        .value;
+    let captured = attacker_value >= target_value;
+    events.push(GameEvent::TripRolled {
+        attacker,
+        attacker_value,
+        target,
+        target_value,
+        captured,
+    });
+    if captured {
+        capture(state, player, target, &[attacker], events);
+    }
+}

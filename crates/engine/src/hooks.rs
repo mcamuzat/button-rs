@@ -5,6 +5,7 @@ use crate::action::AttackKind;
 use crate::die::Die;
 use crate::rng::SeededRng;
 use crate::skill::DieSkill;
+use crate::state::CaptureScoring;
 use std::collections::BTreeSet;
 
 /// R 3.3 + R 6.13 + R 6.14: does this die count when comparing initiative?
@@ -202,4 +203,39 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
         values.extend(negatives);
     }
     values
+}
+
+/// R 6.6 + R 6.15 + R 7.1: how `target`, captured by these attackers, will score.
+pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScoring {
+    let mut null = false;
+    let mut value = false;
+    for die in attackers {
+        for skill in die.skills.iter() {
+            match skill {
+                DieSkill::Null => null = true,
+                DieSkill::Value => value = true,
+                DieSkill::Berserk
+                | DieSkill::Chance
+                | DieSkill::Fire
+                | DieSkill::Focus
+                | DieSkill::Konstant
+                | DieSkill::Poison
+                | DieSkill::Queer
+                | DieSkill::Reserve
+                | DieSkill::Shadow
+                | DieSkill::Speed
+                | DieSkill::Stealth
+                | DieSkill::Stinger
+                | DieSkill::Trip => {}
+            }
+        }
+    }
+    if null {
+        CaptureScoring::Zero
+    } else if value {
+        // R 6.15: valued at the face the target shows when captured.
+        CaptureScoring::ByValue(target.value)
+    } else {
+        CaptureScoring::BySize
+    }
 }

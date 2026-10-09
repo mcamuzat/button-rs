@@ -9,8 +9,10 @@ pub mod event;
 mod hooks;
 pub mod ids;
 mod initiative;
+mod resolve;
 pub mod rng;
 mod round;
+mod scoring;
 mod setup;
 pub mod skill;
 pub mod state;
@@ -25,6 +27,7 @@ pub use error::{AttackError, FireError, ReactionError, RuleError};
 pub use event::GameEvent;
 pub use ids::{DieId, PlayerId};
 pub use rng::SeededRng;
+pub use scoring::round_score;
 pub use setup::new_game;
 pub use skill::{DieSkill, SkillInfo, SkillSet, skill_info};
 pub use state::{

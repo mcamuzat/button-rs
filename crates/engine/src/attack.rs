@@ -4,6 +4,7 @@ use crate::action::{AttackKind, DeclaredAttack};
 use crate::die::Die;
 use crate::error::AttackError;
 use crate::hooks;
+use crate::ids::DieId;
 use crate::ids::PlayerId;
 use crate::state::GameState;
 
@@ -131,4 +132,65 @@ pub fn check_attack(
     } else {
         Err(AttackError::ValuesDoNotMatch)
     }
+}
+
+/// Non-empty subsets of `dice`, in a stable order (capped at 16 dice: no button comes close).
+fn subsets(dice: &[&Die]) -> Vec<Vec<DieId>> {
+    let n = dice.len().min(16);
+    (1u32..(1u32 << n))
+        .map(|mask| {
+            (0..n)
+                .filter(|i| mask & (1 << i) != 0)
+                .map(|i| dice[i].id)
+                .collect()
+        })
+        .collect()
+}
+
+/// Every legal attack for `player` right now, without Fire assistance.
+pub(crate) fn possible_attacks(state: &GameState, player: PlayerId) -> Vec<DeclaredAttack> {
+    let mine: Vec<&Die> = state
+        .player(player)
+        .active
+        .iter()
+        .filter(|d| !d.dizzy)
+        .collect();
+    let theirs: Vec<&Die> = state.player(player.other()).active.iter().collect();
+    let mut candidates = Vec::new();
+    for a in &mine {
+        let kinds = hooks::attack_kinds(a);
+        for t in &theirs {
+            for kind in [AttackKind::Power, AttackKind::Shadow, AttackKind::Trip] {
+                if kinds.contains(&kind) {
+                    candidates.push(DeclaredAttack {
+                        kind,
+                        attackers: vec![a.id],
+                        targets: vec![t.id],
+                    });
+                }
+            }
+        }
+        for kind in [AttackKind::Speed, AttackKind::Berserk] {
+            if kinds.contains(&kind) {
+                for targets in subsets(&theirs) {
+                    candidates.push(DeclaredAttack {
+                        kind,
+                        attackers: vec![a.id],
+                        targets,
+                    });
+                }
+            }
+        }
+    }
+    for t in &theirs {
+        for attackers in subsets(&mine) {
+            candidates.push(DeclaredAttack {
+                kind: AttackKind::Skill,
+                attackers,
+                targets: vec![t.id],
+            });
+        }
+    }
+    candidates.retain(|attack| check_attack(state, player, attack).is_ok());
+    candidates
 }
