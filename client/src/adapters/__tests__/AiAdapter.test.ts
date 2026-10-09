@@ -11,9 +11,11 @@ function fakeMatch(first: "One" | "Two", turns = 10): EngineMatch {
   return {
     view(viewerJson) {
       const over = played >= turns;
+      const viewer = JSON.parse(viewerJson);
       return JSON.stringify({
-        viewer: JSON.parse(viewerJson),
+        viewer,
         actors: over ? [] : [turn],
+        legal: over ? { type: "GameOver" } : viewer.player === turn ? { type: "Attack" } : { type: "Wait" },
         waiting_for: over ? { type: "GameOver", result: { winner: "One", reason: "Rounds" } } : { type: "Attack", player: turn },
         round: 1,
       });
@@ -80,6 +82,38 @@ describe("AiAdapter", () => {
     const { brain } = manualBrain();
     const adapter = new AiAdapter(fakeMatch("Two"), brain, "Easy", () => 1);
     expect(adapter.dispatch("One", { type: "Pass" })).toBe("pas votre tour");
+  });
+
+  it("keeps the human's panel when the AI only settles its own simultaneous choice", async () => {
+    // Review finding: the AI's Swing choice remounted the human's Swing panel.
+    let aiDone = false;
+    const engine: EngineMatch = {
+      view: (viewerJson) =>
+        JSON.stringify({
+          viewer: JSON.parse(viewerJson),
+          actors: aiDone ? ["One"] : ["One", "Two"],
+          legal: { type: "SpecifyDice", swing: [], options: [] },
+          round: 1,
+        }),
+      apply: () => {
+        aiDone = true;
+        return JSON.stringify({ type: "Applied", events: [] });
+      },
+      state_json: () => "{}",
+      free: vi.fn(),
+    };
+    const { brain, answer } = manualBrain();
+    const adapter = new AiAdapter(engine, brain, "Easy", () => 1);
+    const before = adapter.getSnapshot().version;
+    answer();
+    await tick();
+    expect(adapter.getSnapshot().view.actors).toEqual(["One"]);
+    expect(adapter.getSnapshot().version).toBe(before);
+  });
+
+  it("knows which seat is the human's", () => {
+    const { brain } = manualBrain();
+    expect(new AiAdapter(fakeMatch("One"), brain, "Easy", () => 1).mySeat).toBe("One");
   });
 
   it("reports a brain failure", async () => {

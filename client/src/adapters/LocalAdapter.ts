@@ -8,6 +8,7 @@ import type { EngineMatch, GameAdapter, Snapshot } from "./GameAdapter";
 export class LocalAdapter implements GameAdapter {
   readonly handoff = true;
   readonly names: Record<PlayerId, string> = { One: "Joueur 1", Two: "Joueur 2" };
+  readonly mySeat = null;
   private snapshot: Snapshot;
   private readonly listeners = new Set<() => void>();
 

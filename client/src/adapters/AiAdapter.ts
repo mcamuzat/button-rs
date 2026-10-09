@@ -24,6 +24,7 @@ const randomSeed = () => crypto.getRandomValues(new Uint32Array(1))[0];
 /** The human (seat One) against the engine's AI (seat Two), which runs in a worker. */
 export class AiAdapter implements GameAdapter {
   readonly handoff = false;
+  readonly mySeat = HUMAN;
   readonly names: Record<PlayerId, string>;
   private snapshot: Snapshot;
   private readonly listeners = new Set<() => void>();
@@ -62,10 +63,15 @@ export class AiAdapter implements GameAdapter {
   private play(player: PlayerId, action: Action): string | null {
     const outcome = applyAction(this.engine, player, action);
     if ("error" in outcome) return outcome.error;
+    const view = viewAs(this.engine, { type: "Seat", player: HUMAN });
+    // The decision panels are keyed on `version`: an AI move that leaves the human's
+    // decision unchanged (both choose their Swing at once) must not reset the human's input.
+    const humanDecisionChanged =
+      player === HUMAN || JSON.stringify(view.legal) !== JSON.stringify(this.snapshot.view.legal);
     this.update({
-      view: viewAs(this.engine, { type: "Seat", player: HUMAN }),
+      view,
       lastEvents: outcome.events,
-      version: this.snapshot.version + 1,
+      version: this.snapshot.version + (humanDecisionChanged ? 1 : 0),
     });
     return null;
   }

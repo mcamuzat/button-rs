@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DieView } from "../../engine/generated/DieView";
 import type { SkillInfo } from "../../engine/generated/SkillInfo";
-import { attackLabel, skillTitle } from "../labels";
+import { attackLabel, skillTitle, turnText, winnerText } from "../labels";
 
 describe("labels", () => {
   it("names attack kinds", () => {
@@ -24,5 +24,15 @@ describe("labels", () => {
       ["Poison", { skill: "Poison", letter: "p", name: "Poison", rule: "R 6.7", description: "Points négatifs." }],
     ]);
     expect(skillTitle(die, skills)).toBe("p(6) — 4 sur 1–6\nPoison : Points négatifs.");
+  });
+
+  it("speaks to the local player in the second person", () => {
+    const names = { One: "Vous", Two: "IA (Normal)" } as const;
+    expect(winnerText(names, "One", "One")).toBe("Vous gagnez");
+    expect(winnerText(names, "One", "Two")).toBe("IA (Normal) gagne");
+    expect(turnText(names, "One", "One")).toBe("À vous de jouer");
+    const hotseat = { One: "Joueur 1", Two: "Joueur 2" } as const;
+    expect(winnerText(hotseat, null, "Two")).toBe("Joueur 2 gagne");
+    expect(turnText(hotseat, null, "Two")).toBe("À Joueur 2");
   });
 });

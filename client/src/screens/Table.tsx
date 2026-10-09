@@ -85,6 +85,7 @@ export function Table({ adapter, onLeave }: Props) {
         selection={selection}
         onClearSelection={() => setSelection(EMPTY)}
         names={adapter.names}
+        mySeat={adapter.mySeat}
         thinking={thinking}
       />
       {area(one)}
@@ -99,7 +100,7 @@ export function Table({ adapter, onLeave }: Props) {
         </p>
       )}
       {needsHandoff && seat && <Handoff name={adapter.names[seat]} onReady={() => setReadySeat(`${view.round}-${seat}`)} />}
-      <MatchEnd view={view} names={adapter.names} onLeave={onLeave} />
+      <MatchEnd view={view} names={adapter.names} mySeat={adapter.mySeat} onLeave={onLeave} />
     </main>
   );
 }

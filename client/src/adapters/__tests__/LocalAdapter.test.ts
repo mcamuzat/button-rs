@@ -60,6 +60,7 @@ describe("LocalAdapter", () => {
   it("uses the handoff screen and seat names of a shared screen", () => {
     const adapter = new LocalAdapter(fakeMatch());
     expect(adapter.handoff).toBe(true);
+    expect(adapter.mySeat).toBeNull();
     expect(adapter.names).toEqual({ One: "Joueur 1", Two: "Joueur 2" });
     expect(adapter.getSnapshot().thinking).toBe(false);
   });

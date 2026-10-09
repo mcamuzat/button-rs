@@ -2,6 +2,7 @@ import type { Action } from "../engine/generated/Action";
 import type { GameView } from "../engine/generated/GameView";
 import type { PlayerId } from "../engine/generated/PlayerId";
 import { AttackPanel } from "./AttackPanel";
+import { turnText } from "./labels";
 import { FirePanel } from "./FirePanel";
 import { InitiativePanel } from "./InitiativePanel";
 import { ReservePanel } from "./ReservePanel";
@@ -14,13 +15,14 @@ interface Props {
   selection: Selection;
   onClearSelection: () => void;
   names: Record<PlayerId, string>;
+  mySeat: PlayerId | null;
   thinking: boolean;
 }
 
 /** The decision the acting player faces, chosen from `view.legal` (engine-provided). */
-export function ActionArea({ view, act, selection, onClearSelection, names, thinking }: Props) {
+export function ActionArea({ view, act, selection, onClearSelection, names, mySeat, thinking }: Props) {
   const legal = view.legal;
-  const who = view.viewer.type === "Seat" ? names[view.viewer.player] : "";
+  const who = view.viewer.type === "Seat" ? turnText(names, mySeat, view.viewer.player) : "";
   // Recipe notation of any die id, from the engine-provided views.
   const notation = (id: number) => {
     for (const p of view.players) {
@@ -66,7 +68,7 @@ export function ActionArea({ view, act, selection, onClearSelection, names, thin
   return (
     <section className="rounded-2xl bg-ink/30 p-4">
       {who && legal.type !== "Wait" && legal.type !== "GameOver" && (
-        <p className="mb-2 font-display text-lg">À {who}</p>
+        <p className="mb-2 font-display text-lg">{who}</p>
       )}
       {body}
     </section>

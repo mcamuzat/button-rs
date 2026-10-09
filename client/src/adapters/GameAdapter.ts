@@ -29,6 +29,8 @@ export interface GameAdapter {
   /** Shared screen: hide secret choices behind a "pass the screen" overlay. */
   readonly handoff: boolean;
   readonly names: Record<PlayerId, string>;
+  /** The seat of the person in front of this screen, when there is exactly one. */
+  readonly mySeat: PlayerId | null;
   getSnapshot(): Snapshot;
   subscribe(listener: () => void): () => void;
   /** Returns the engine's message when the action is refused, `null` otherwise. */
