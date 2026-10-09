@@ -20,6 +20,7 @@ pub mod skill;
 pub mod state;
 #[cfg(feature = "testing")]
 pub mod testing;
+mod view;
 
 pub use action::{Action, AttackKind, DeclaredAttack, SpecChoice};
 pub use apply::apply;
@@ -39,4 +40,7 @@ pub use skill::{DieSkill, SkillInfo, SkillSet, skill_info};
 pub use state::{
     Button, CaptureScoring, CapturedDie, DieSlot, EndReason, GameState, MatchConfig, MatchResult,
     PlayerState, Record, WaitingFor,
+};
+pub use view::{
+    CapturedView, DieView, GameView, PlayerView, SlotView, SwingView, Viewer, view_for,
 };
