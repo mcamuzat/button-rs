@@ -779,7 +779,7 @@ mod tests {
         let buttons = select_candidates(&original_buttons(), &options.candidates).unwrap();
         let names: Vec<&str> = buttons.iter().map(|b| b.name.as_str()).collect();
         assert_eq!(names, ["Avoine", "(4) (6) (X)"]);
-        assert!(select_candidates(&[], &[Selection::Recipe("o(4)".to_string())]).is_err());
+        assert!(select_candidates(&[], &[Selection::Recipe("D(4)".to_string())]).is_err());
         assert!(select_candidates(&[], &[Selection::Button("Nobody".to_string())]).is_err());
     }
 
