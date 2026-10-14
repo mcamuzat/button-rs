@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn malformed_input_is_an_error_not_a_panic() {
         assert!(new_match("{}").is_err());
-        assert!(new_match(&SETUP.replace("(8) (X)", "o(8)")).is_err());
+        assert!(new_match(&SETUP.replace("(8) (X)", "D(8)")).is_err());
         let mut state = new_match(SETUP).unwrap();
         assert!(apply(&mut state, r#""Three""#, r#"{"type":"Pass"}"#).is_err());
         assert!(view(&state, "nope").is_err());
