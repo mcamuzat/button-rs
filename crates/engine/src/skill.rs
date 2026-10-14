@@ -13,6 +13,7 @@ pub enum DieSkill {
     Konstant,
     Mighty,
     Null,
+    Ornery,
     Poison,
     Queer,
     Reserve,
@@ -21,12 +22,13 @@ pub enum DieSkill {
     Speed,
     Stealth,
     Stinger,
+    TimeAndSpace,
     Trip,
     Value,
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 17] = [
+    pub const ALL: [DieSkill; 19] = [
         DieSkill::Berserk,
         DieSkill::Chance,
         DieSkill::Fire,
@@ -34,6 +36,7 @@ impl DieSkill {
         DieSkill::Konstant,
         DieSkill::Mighty,
         DieSkill::Null,
+        DieSkill::Ornery,
         DieSkill::Poison,
         DieSkill::Queer,
         DieSkill::Reserve,
@@ -42,6 +45,7 @@ impl DieSkill {
         DieSkill::Speed,
         DieSkill::Stealth,
         DieSkill::Stinger,
+        DieSkill::TimeAndSpace,
         DieSkill::Trip,
         DieSkill::Value,
     ];
@@ -56,6 +60,7 @@ impl DieSkill {
             DieSkill::Konstant => 'k',
             DieSkill::Mighty => 'H',
             DieSkill::Null => 'n',
+            DieSkill::Ornery => 'o',
             DieSkill::Poison => 'p',
             DieSkill::Queer => 'q',
             DieSkill::Reserve => 'r',
@@ -64,6 +69,7 @@ impl DieSkill {
             DieSkill::Speed => 'z',
             DieSkill::Stealth => 'd',
             DieSkill::Stinger => 'g',
+            DieSkill::TimeAndSpace => '^',
             DieSkill::Trip => 't',
             DieSkill::Value => 'v',
         }
@@ -151,6 +157,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.6",
             "Vaut zéro point, et les dés qu'il aide à capturer valent zéro point.",
         ),
+        DieSkill::Ornery => (
+            "Ornery",
+            "R 6.18",
+            "Se relance après chaque attaque de son propriétaire, même s'il n'y participe pas ; pas quand il passe.",
+        ),
         DieSkill::Poison => (
             "Poison",
             "R 6.7",
@@ -186,6 +197,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "Stinger",
             "R 6.13",
             "En attaque Skill, compte pour toute valeur de son minimum à sa valeur actuelle. Ignoré pour l'initiative.",
+        ),
+        DieSkill::TimeAndSpace => (
+            "TimeAndSpace",
+            "R 6.19",
+            "S'il attaque et se relance sur une valeur impaire, son propriétaire rejoue.",
         ),
         DieSkill::Trip => (
             "Trip",

@@ -28,18 +28,19 @@ pub(crate) fn declare_attack(
         }
         return Err(RuleError::IllegalAttack { reason });
     }
-    resolve_attack(state, player, attack, events);
-    round::end_turn(state, player, events);
+    let again = resolve_attack(state, player, attack, events);
+    round::end_turn(state, player, again, events);
     Ok(())
 }
 
-/// R 4.4 + R 6.1 + R 6.14: carries out an attack already known to be legal.
+/// R 4.4 + R 6.1 + R 6.14 + R 6.18 + R 6.19: carries out an attack already known to be
+/// legal. Returns whether the attacker plays again (R 6.19).
 pub(crate) fn resolve_attack(
     state: &mut GameState,
     player: PlayerId,
     attack: DeclaredAttack,
     events: &mut Vec<GameEvent>,
-) {
+) -> bool {
     events.push(GameEvent::Attacked {
         player,
         attack: attack.clone(),
@@ -69,6 +70,25 @@ pub(crate) fn resolve_attack(
             }
         }
     }
+    // R 6.19: one extra turn at most, when a rerolled TimeAndSpace attacker shows odd.
+    let plays_again = attack.attackers.iter().any(|&a| {
+        state
+            .player(player)
+            .die(a)
+            .is_some_and(hooks::grants_extra_turn)
+    });
+    // R 6.18: the owner's other Ornery dice reroll after the attack.
+    let ornery: Vec<DieId> = state
+        .player(player)
+        .active
+        .iter()
+        .filter(|d| !attack.attackers.contains(&d.id) && hooks::rerolls_after_any_attack(d))
+        .map(|d| d.id)
+        .collect();
+    for id in ornery {
+        reroll(state, player, id, hooks::RerollCause::Normal, events);
+    }
+    plays_again
 }
 
 /// R 4.4: the target joins the attacker's score pile.

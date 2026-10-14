@@ -86,6 +86,10 @@ pub enum GameEvent {
     Passed {
         player: PlayerId,
     },
+    /// R 6.19: `player` attacks again.
+    ExtraTurn {
+        player: PlayerId,
+    },
     /// Scores in half-points.
     RoundEnded {
         round: u8,

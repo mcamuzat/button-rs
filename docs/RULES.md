@@ -57,6 +57,8 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.15 Value (v).** Un dé Value compte comme si sa taille était égale à sa valeur actuelle. Quand un dé Value participe à une attaque, les dés capturés comptent pour la valeur qu'ils montraient au moment de la capture.
 - **R 6.16 Slow (w).** Ne compte pas pour l'initiative. (Source : `BMSkillSlow.php`.)
 - **R 6.17 Mighty (H).** Chaque fois qu'il se relance, pour quelque raison que ce soit, le dé grandit d'abord jusqu'à la taille suivante de la liste 1, 2, 4, 6, 8, 10, 12, 16, 20, 30 (une taille hors liste passe à la suivante ; 30 et plus ne bougent pas ; un Twin fait grandir chaque moitié). Il ne grandit pas au jet de début de manche, ni quand il se relance après avoir fait une attaque Trip, ni s'il ne se relance pas (Konstant). Il compte à sa taille du moment. (Source : `BMSkillMighty.php`, `BMDie::grow`.)
+- **R 6.18 Ornery (o).** Se relance après chaque attaque de son propriétaire, qu'il y ait participé ou non (un attaquant Ornery ne se relance qu'une fois). Ne se relance pas quand le joueur passe. (Source : `BMSkillOrnery.php`.)
+- **R 6.19 TimeAndSpace (^).** Si un dé TimeAndSpace participe à une attaque et se relance sur une valeur impaire, son propriétaire joue un tour de plus ; un seul tour de plus par attaque. La manche s'arrête quand même si un joueur n'a plus de dés. (Source : `BMSkillTimeAndSpace.php`.)
 
 ## R 7 — Interactions retenues
 
@@ -65,3 +67,4 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 7.3** Konstant et Stinger se combinent : le dé compte pour toute valeur de ±1 à ±sa valeur.
 - **R 7.4** Un dé Focus baissé par le premier joueur reste inutilisable jusqu'à la fin de son premier tour.
 - **R 7.5** Chance et Mighty : une relance Chance fait grandir le dé. Berserk et Mighty : le dé est divisé, puis grandit en se relançant.
+- **R 7.6** Konstant et Ornery : le dé garde sa valeur lors de la relance Ornery. Konstant et TimeAndSpace : un attaquant Konstant ne se relance pas et ne donne pas de tour supplémentaire.

@@ -26,6 +26,8 @@ pub(crate) fn counts_for_initiative(die: &Die) -> bool {
         | DieSkill::Speed
         | DieSkill::Stealth
         | DieSkill::Mighty
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
         | DieSkill::Value => true,
     })
 }
@@ -50,6 +52,8 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::Trip
         | DieSkill::Mighty
         | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
         | DieSkill::Value => true,
     })
 }
@@ -81,6 +85,8 @@ fn grows_on_reroll(die: &Die) -> bool {
         | DieSkill::Stealth
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
         | DieSkill::Value => false,
     })
 }
@@ -97,6 +103,58 @@ pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng, cause: RerollCause) -> 
     }
     die.value = die.sides.roll(rng);
     (die.sides != before).then_some(before)
+}
+
+/// R 6.18: does this die reroll after every attack of its owner?
+pub(crate) fn rerolls_after_any_attack(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Ornery => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
+        | DieSkill::Value => false,
+    })
+}
+
+/// R 6.19: does this attacker, rerolled to an odd value, give an extra turn?
+pub(crate) fn grants_extra_turn(die: &Die) -> bool {
+    die.value % 2 == 1
+        && rerolls(die)
+        && die.skills.iter().any(|skill| match skill {
+            DieSkill::TimeAndSpace => true,
+            DieSkill::Berserk
+            | DieSkill::Chance
+            | DieSkill::Fire
+            | DieSkill::Focus
+            | DieSkill::Konstant
+            | DieSkill::Mighty
+            | DieSkill::Null
+            | DieSkill::Ornery
+            | DieSkill::Poison
+            | DieSkill::Queer
+            | DieSkill::Reserve
+            | DieSkill::Shadow
+            | DieSkill::Slow
+            | DieSkill::Speed
+            | DieSkill::Stealth
+            | DieSkill::Stinger
+            | DieSkill::Trip
+            | DieSkill::Value => false,
+        })
 }
 
 /// Which attacks this die can make (R 4.2, R 4.3, R 6.1, R 6.3, R 6.5, R 6.8–6.10,
@@ -138,6 +196,8 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Stinger
             | DieSkill::Mighty
             | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
             | DieSkill::Value => {}
         }
     }
@@ -171,6 +231,8 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Trip
             | DieSkill::Mighty
             | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
             | DieSkill::Value => {}
         }
     }
@@ -195,6 +257,8 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::Trip
         | DieSkill::Mighty
         | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
         | DieSkill::Value => false,
     })
 }
@@ -218,6 +282,8 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::Trip
         | DieSkill::Mighty
         | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
         | DieSkill::Value => true,
     })
 }
@@ -244,6 +310,8 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::Trip
             | DieSkill::Mighty
             | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
             | DieSkill::Value => {}
         }
     }
@@ -279,6 +347,8 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::Stinger
                 | DieSkill::Mighty
                 | DieSkill::Slow
+                | DieSkill::Ornery
+                | DieSkill::TimeAndSpace
                 | DieSkill::Trip => {}
             }
         }

@@ -17,8 +17,14 @@ pub(crate) fn surrender(state: &mut GameState, player: PlayerId, events: &mut Ve
     state.waiting_for = WaitingFor::GameOver { result };
 }
 
-/// After an attack or a pass: R 7.4 (dizziness lasts one turn), then R 4.5.
-pub(crate) fn end_turn(state: &mut GameState, player: PlayerId, events: &mut Vec<GameEvent>) {
+/// After an attack or a pass: R 7.4 (dizziness lasts one turn), R 6.19 (extra turn), then
+/// R 4.5.
+pub(crate) fn end_turn(
+    state: &mut GameState,
+    player: PlayerId,
+    plays_again: bool,
+    events: &mut Vec<GameEvent>,
+) {
     for p in PlayerId::ALL {
         for die in &mut state.player_mut(p).active {
             die.dizzy = false;
@@ -29,6 +35,10 @@ pub(crate) fn end_turn(state: &mut GameState, player: PlayerId, events: &mut Vec
         .any(|p| state.player(p).active.is_empty());
     if out_of_dice || state.consecutive_passes >= 2 {
         end_round(state, events);
+    } else if plays_again {
+        // R 6.19.
+        events.push(GameEvent::ExtraTurn { player });
+        state.waiting_for = WaitingFor::Attack { player };
     } else {
         state.waiting_for = WaitingFor::Attack {
             player: player.other(),
@@ -55,7 +65,7 @@ pub(crate) fn pass(
     }
     state.consecutive_passes += 1;
     events.push(GameEvent::Passed { player });
-    end_turn(state, player, events);
+    end_turn(state, player, false, events);
     Ok(())
 }
 
