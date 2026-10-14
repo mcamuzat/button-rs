@@ -7,7 +7,7 @@
 //!
 //! ```text
 //! cargo run -p buttonmen-ai --release --example balance -- [options]
-//!   --candidates originaux | edition:<nom> | bouton:<nom> | recette:<recette>
+//!   --candidates originaux | edition:<nom> | bouton:<nom> | recette:<recette> | competence:<Nom>
 //!                répétable, les sélections s'ajoutent           (défaut : originaux)
 //!   --reference <édition>[,<édition>…]                       (défaut : Soldiers,The Core)
 //!   --games <N>        parties par paire (défaut : 20)
@@ -15,9 +15,10 @@
 //!   --seed <N>   --threads <N>   --csv <fichier>
 //! ```
 //!
-//! The reference editions come from the local buttonweavers import
-//! (`./scripts/import-buttonweavers.sh`). Both seats are played by the AI at the same
-//! level: a skill the AI plays badly makes its button look weaker than it is.
+//! The reference editions and the human win rates (Button Men Online) come from the local
+//! buttonweavers import (`./scripts/import-buttonweavers.sh`). Both seats are played by
+//! the AI at the same level: a skill the AI plays badly makes its button look weaker than
+//! it is.
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -26,11 +27,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use buttonmen_ai::{Level, choose_action};
+use buttonmen_data::SetCategory;
 use buttonmen_data::{
     ButtonRecipe, ButtonSource, Playability, catalog, original_buttons, parse_buttonweavers_json,
     parse_recipe, to_button,
 };
 use buttonmen_engine::{Button, GameState, MatchConfig, PlayerId, WaitingFor, apply, new_game};
+use buttonmen_engine::{DieSkill, skill_info};
+use serde::Deserialize;
 
 const IMPORT: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -38,6 +42,59 @@ const IMPORT: &str = concat!(
 );
 /// A match longer than this is abandoned and reported (it should never happen).
 const MAX_STEPS: u64 = 3000;
+const STATS: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../data/buttonweavers/stats.json"
+);
+/// Human rates measured on fewer games than this are too noisy to compare.
+const MIN_HUMAN_GAMES: u32 = 30;
+
+/// Win rate of a button in human games on Button Men Online.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+struct Human {
+    /// Percent.
+    rate: f64,
+    count: u32,
+}
+
+#[derive(Deserialize)]
+struct StatsFile {
+    data: BTreeMap<String, Human>,
+}
+
+fn parse_stats(json: &str) -> Result<BTreeMap<String, Human>, serde_json::Error> {
+    Ok(serde_json::from_str::<StatsFile>(json)?.data)
+}
+
+/// The local human stats, or none when the import has not fetched them.
+fn load_stats() -> BTreeMap<String, Human> {
+    std::fs::read_to_string(STATS)
+        .ok()
+        .and_then(|json| parse_stats(&json).ok())
+        .unwrap_or_default()
+}
+
+/// Pearson correlation of `(x, y)` pairs; `None` below three pairs or without spread.
+fn pearson(pairs: &[(f64, f64)]) -> Option<f64> {
+    if pairs.len() < 3 {
+        return None;
+    }
+    let n = pairs.len() as f64;
+    let (mx, my) = pairs
+        .iter()
+        .fold((0.0, 0.0), |(sx, sy), (x, y)| (sx + x / n, sy + y / n));
+    let (mut cov, mut vx, mut vy) = (0.0, 0.0, 0.0);
+    for (x, y) in pairs {
+        cov += (x - mx) * (y - my);
+        vx += (x - mx).powi(2);
+        vy += (y - my).powi(2);
+    }
+    if vx == 0.0 || vy == 0.0 {
+        None
+    } else {
+        Some(cov / (vx.sqrt() * vy.sqrt()))
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Selection {
@@ -46,6 +103,8 @@ enum Selection {
     Button(String),
     /// An ad hoc recipe, named after itself: to try a variant before editing the catalog.
     Recipe(String),
+    /// Official playable buttons with a die of this skill (name as in `skill_info`).
+    Skill(String),
 }
 
 #[derive(Debug, Clone)]
@@ -103,9 +162,11 @@ fn parse_selection(text: &str) -> Result<Selection, String> {
         Ok(Selection::Button(name.to_string()))
     } else if let Some(recipe) = text.strip_prefix("recette:") {
         Ok(Selection::Recipe(recipe.to_string()))
+    } else if let Some(name) = text.strip_prefix("competence:") {
+        Ok(Selection::Skill(name.to_string()))
     } else {
         Err(format!(
-            "candidats inconnus : {text} (originaux, edition:<nom>, bouton:<nom>, recette:<recette>)"
+            "candidats inconnus : {text} (originaux, edition:<nom>, bouton:<nom>, recette:<recette>, competence:<Nom>)"
         ))
     }
 }
@@ -163,6 +224,16 @@ fn select_candidates(
                 name: recipe.clone(),
                 dice: parse_recipe(recipe).map_err(|e| format!("{recipe} : {e}"))?,
             }],
+            Selection::Skill(name) => {
+                let skill = DieSkill::ALL
+                    .into_iter()
+                    .find(|s| skill_info(*s).name.eq_ignore_ascii_case(name))
+                    .ok_or(format!("compétence inconnue : {name}"))?;
+                select(recipes, |r| {
+                    r.category == SetCategory::Official
+                        && to_button(r).is_ok_and(|b| b.dice.iter().any(|d| d.skills.has(skill)))
+                })
+            }
         };
         if found.is_empty() {
             return Err(format!("Aucun candidat jouable pour {selection:?}"));
@@ -386,7 +457,7 @@ fn percent(x: f64) -> String {
     format!("{:.0} %", x * 100.0)
 }
 
-fn report(summaries: &[Summary], range: (f64, f64)) -> String {
+fn report(summaries: &[Summary], range: (f64, f64), stats: &BTreeMap<String, Human>) -> String {
     let mut sorted: Vec<&Summary> = summaries.iter().collect();
     sorted.sort_by(|a, b| b.rate().total_cmp(&a.rate()));
     let width = sorted
@@ -398,8 +469,8 @@ fn report(summaries: &[Summary], range: (f64, f64)) -> String {
     let mut out = String::new();
     let _ = writeln!(
         out,
-        "{:width$}  {:>9}  {:>13}  {:11}  pire adversaire / meilleur",
-        "Bouton", "victoires", "IC 95 %", "verdict"
+        "{:width$}  {:>9}  {:>13}  {:>8}  {:>5}  {:11}  pire adversaire / meilleur",
+        "Bouton", "victoires", "IC 95 %", "humains", "écart", "verdict"
     );
     for s in sorted {
         let interval = wilson(s.wins, s.games);
@@ -413,12 +484,21 @@ fn report(summaries: &[Summary], range: (f64, f64)) -> String {
                 format!("{name} {}", percent(*rate))
             })
         };
+        let (human, gap) = match stats.get(&s.name) {
+            Some(h) if h.count >= MIN_HUMAN_GAMES => (
+                percent(h.rate / 100.0),
+                format!("{:+.0}", s.rate() * 100.0 - h.rate),
+            ),
+            _ => ("—".to_string(), "—".to_string()),
+        };
         let _ = write!(
             out,
-            "{:width$}  {:>9}  {:>13}  {:11}  {} / {}",
+            "{:width$}  {:>9}  {:>13}  {:>8}  {:>5}  {:11}  {} / {}",
             s.name,
             percent(s.rate()),
             format!("{}–{}", percent(interval.0), percent(interval.1)),
+            human,
+            gap,
             flag,
             opponent(&s.worst),
             opponent(&s.best),
@@ -429,6 +509,29 @@ fn report(summaries: &[Summary], range: (f64, f64)) -> String {
         out.push('\n');
     }
     out
+}
+
+/// "Corrélation banc / humains : …" over every measured button with enough human games.
+fn correlation_line(summaries: &[&Summary], stats: &BTreeMap<String, Human>) -> String {
+    let pairs: Vec<(f64, f64)> = summaries
+        .iter()
+        .filter_map(|s| {
+            let h = stats.get(&s.name).filter(|h| h.count >= MIN_HUMAN_GAMES)?;
+            Some((s.rate() * 100.0, h.rate))
+        })
+        .collect();
+    match pearson(&pairs) {
+        Some(r) => {
+            let gap = pairs.iter().map(|(b, h)| (b - h).abs()).sum::<f64>() / pairs.len() as f64;
+            format!(
+                "Corrélation banc / humains : {r:.2} sur {} boutons (écart moyen {gap:.1} points)",
+                pairs.len()
+            )
+        }
+        None => {
+            "Corrélation banc / humains : pas assez de boutons avec des stats humaines".to_string()
+        }
+    }
 }
 
 fn write_csv(
@@ -541,8 +644,14 @@ fn main() {
         percent(range.0),
         percent(range.1)
     );
-    println!("Candidats :\n{}", report(&summaries, range));
-    println!("Référence :\n{}", report(&reference_summaries, range));
+    let stats = load_stats();
+    println!("Candidats :\n{}", report(&summaries, range, &stats));
+    println!(
+        "Référence :\n{}",
+        report(&reference_summaries, range, &stats)
+    );
+    let measured: Vec<&Summary> = summaries.iter().chain(&reference_summaries).collect();
+    println!("{}", correlation_line(&measured, &stats));
     if let Some(path) = &options.csv {
         match write_csv(path, &candidates, &reference, &tallies) {
             Ok(()) => eprintln!("Détail écrit dans {path}"),
@@ -560,6 +669,72 @@ mod tests {
             name: name.to_string(),
             dice: parse_recipe(recipe).expect("valid recipe"),
         }
+    }
+
+    #[test]
+    fn human_stats_are_read_from_the_published_json() {
+        let json = r#"{"message": "Button stats generated on 2026-09-19",
+            "data": {"Avis": {"bset": "Soldiers", "count": 420, "name": "Avis", "rate": 42.6, "tl": true}}}"#;
+        let stats = parse_stats(json).unwrap();
+        assert_eq!(
+            stats["Avis"],
+            Human {
+                rate: 42.6,
+                count: 420
+            }
+        );
+        assert!(parse_stats("[]").is_err());
+    }
+
+    #[test]
+    fn pearson_correlation() {
+        let perfect = [(1.0, 2.0), (2.0, 4.0), (3.0, 6.0)];
+        assert!((pearson(&perfect).unwrap() - 1.0).abs() < 1e-9);
+        let inverse = [(1.0, 3.0), (2.0, 2.0), (3.0, 1.0)];
+        assert!((pearson(&inverse).unwrap() + 1.0).abs() < 1e-9);
+        assert_eq!(pearson(&[(1.0, 1.0), (2.0, 2.0)]), None);
+        assert_eq!(pearson(&[(1.0, 5.0), (2.0, 5.0), (3.0, 5.0)]), None);
+    }
+
+    #[test]
+    fn skill_selection_takes_official_playable_buttons_with_that_skill() {
+        let json = r#"[
+            {"name": "Coil", "recipe": "p(4) (12) p(20) (20) (V)", "set": "BROM", "category": "Official", "set_order": 8},
+            {"name": "Fan", "recipe": "p(4) (8) (12) (X)", "set": "Fan", "category": "Unofficial", "set_order": 1},
+            {"name": "Avis", "recipe": "(4) (4) (10) (12) (X)", "set": "Soldiers", "category": "Official", "set_order": 0}
+        ]"#;
+        let recipes = parse_buttonweavers_json(json).unwrap();
+        let buttons =
+            select_candidates(&recipes, &[Selection::Skill("Poison".to_string())]).unwrap();
+        let names: Vec<&str> = buttons.iter().map(|b| b.name.as_str()).collect();
+        assert_eq!(names, ["Coil"]);
+        assert!(select_candidates(&recipes, &[Selection::Skill("Nope".to_string())]).is_err());
+        assert_eq!(
+            parse_selection("competence:Poison"),
+            Ok(Selection::Skill("Poison".to_string()))
+        );
+    }
+
+    #[test]
+    fn the_report_shows_human_rates_and_the_gap() {
+        let summary = Summary {
+            name: "Avis".to_string(),
+            wins: 30,
+            games: 60,
+            unfinished: 0,
+            worst: None,
+            best: None,
+        };
+        let stats = BTreeMap::from([(
+            "Avis".to_string(),
+            Human {
+                rate: 42.6,
+                count: 420,
+            },
+        )]);
+        let text = report(&[summary], (0.4, 0.6), &stats);
+        assert!(text.contains("43 %"), "{text}");
+        assert!(text.contains("+7"), "{text}");
     }
 
     #[test]

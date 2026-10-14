@@ -42,6 +42,7 @@ dependencies = [
  "buttonmen-data",
  "buttonmen-engine",
  "serde",
+ "serde_json",
  "ts-rs",
 ]
 
