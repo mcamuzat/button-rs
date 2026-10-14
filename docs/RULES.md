@@ -21,7 +21,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 
 - **R 3.1** Au premier tour, chaque joueur choisit ses tailles Swing et Option, en secret ; les choix sont révélés ensemble.
 - **R 3.2** Tous les dés en jeu sont lancés. Les dés capturés à la manche précédente reviennent à leur propriétaire ; chaque manche repart de la recette (hors dés Reserve ajoutés, R 6.11).
-- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
+- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger, R 6.16 Slow). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
 - **R 3.4** Égalité complète : le premier joueur est tiré au sort.
 - **R 3.5 Réactions.** Le joueur qui n'a pas l'initiative peut réagir avec ses dés Focus (R 6.4) ou Chance (R 6.2), ou laisser l'autre commencer. S'il prend l'initiative, l'autre peut réagir à son tour, et ainsi de suite.
 
@@ -55,6 +55,8 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.13 Stinger (g).** Dans une attaque Skill, compte pour n'importe quelle valeur entre sa valeur minimale et sa valeur actuelle. Ne compte pas pour l'initiative.
 - **R 6.14 Trip (t).** Peut faire des attaques Trip : on choisit un dé adverse, on relance les deux dés ; si le dé Trip montre alors une valeur supérieure ou égale, la cible est capturée, sinon les deux dés gardent leurs nouvelles valeurs. Une attaque Trip sans aucune chance de capturer est illégale : la meilleure valeur possible du Trip (sa taille, ou sa valeur s'il est Konstant) doit atteindre la plus basse valeur possible de la cible (sa valeur minimale, ou sa valeur si elle est Konstant). Ne compte pas pour l'initiative.
 - **R 6.15 Value (v).** Un dé Value compte comme si sa taille était égale à sa valeur actuelle. Quand un dé Value participe à une attaque, les dés capturés comptent pour la valeur qu'ils montraient au moment de la capture.
+- **R 6.16 Slow (w).** Ne compte pas pour l'initiative. (Source : `BMSkillSlow.php`.)
+- **R 6.17 Mighty (H).** Chaque fois qu'il se relance, pour quelque raison que ce soit, le dé grandit d'abord jusqu'à la taille suivante de la liste 1, 2, 4, 6, 8, 10, 12, 16, 20, 30 (une taille hors liste passe à la suivante ; 30 et plus ne bougent pas ; un Twin fait grandir chaque moitié). Il ne grandit pas au jet de début de manche, ni quand il se relance après avoir fait une attaque Trip, ni s'il ne se relance pas (Konstant). Il compte à sa taille du moment. (Source : `BMSkillMighty.php`, `BMDie::grow`.)
 
 ## R 7 — Interactions retenues
 
@@ -62,3 +64,4 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 7.2** Poison et Value se combinent : la base du calcul Poison est la valeur affichée.
 - **R 7.3** Konstant et Stinger se combinent : le dé compte pour toute valeur de ±1 à ±sa valeur.
 - **R 7.4** Un dé Focus baissé par le premier joueur reste inutilisable jusqu'à la fin de son premier tour.
+- **R 7.5** Chance et Mighty : une relance Chance fait grandir le dé. Berserk et Mighty : le dé est divisé, puis grandit en se relançant.

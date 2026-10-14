@@ -1,7 +1,7 @@
 use crate::action::{AttackKind, DeclaredAttack};
 use crate::attack::check_attack;
 use crate::error::RuleError;
-use crate::event::GameEvent;
+use crate::event::{GameEvent, ResizeCause};
 use crate::hooks;
 use crate::ids::{DieId, PlayerId};
 use crate::round;
@@ -65,7 +65,7 @@ pub(crate) fn resolve_attack(
                 if attack.kind == AttackKind::Berserk {
                     shrink(state, player, attacker, events);
                 }
-                reroll(state, player, attacker, events);
+                reroll(state, player, attacker, hooks::RerollCause::Normal, events);
             }
         }
     }
@@ -105,10 +105,23 @@ fn capture(
     });
 }
 
-fn reroll(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<GameEvent>) {
+fn reroll(
+    state: &mut GameState,
+    owner: PlayerId,
+    id: DieId,
+    cause: hooks::RerollCause,
+    events: &mut Vec<GameEvent>,
+) {
     let GameState { players, rng, .. } = state;
     if let Some(die) = players[owner.index()].die_mut(id) {
-        hooks::reroll(die, rng);
+        if let Some(from) = hooks::reroll(die, rng, cause) {
+            events.push(GameEvent::DieResized {
+                die: id,
+                from,
+                to: die.sides,
+                cause: ResizeCause::Mighty,
+            });
+        }
         events.push(GameEvent::DieRerolled {
             die: id,
             value: die.value,
@@ -135,8 +148,20 @@ fn resolve_trip(
     target: DieId,
     events: &mut Vec<GameEvent>,
 ) {
-    reroll(state, player, attacker, events);
-    reroll(state, player.other(), target, events);
+    reroll(
+        state,
+        player,
+        attacker,
+        hooks::RerollCause::TripAttacker,
+        events,
+    );
+    reroll(
+        state,
+        player.other(),
+        target,
+        hooks::RerollCause::Normal,
+        events,
+    );
     let attacker_value = state
         .player(player)
         .die(attacker)

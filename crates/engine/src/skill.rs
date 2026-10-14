@@ -11,11 +11,13 @@ pub enum DieSkill {
     Fire,
     Focus,
     Konstant,
+    Mighty,
     Null,
     Poison,
     Queer,
     Reserve,
     Shadow,
+    Slow,
     Speed,
     Stealth,
     Stinger,
@@ -24,17 +26,19 @@ pub enum DieSkill {
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 15] = [
+    pub const ALL: [DieSkill; 17] = [
         DieSkill::Berserk,
         DieSkill::Chance,
         DieSkill::Fire,
         DieSkill::Focus,
         DieSkill::Konstant,
+        DieSkill::Mighty,
         DieSkill::Null,
         DieSkill::Poison,
         DieSkill::Queer,
         DieSkill::Reserve,
         DieSkill::Shadow,
+        DieSkill::Slow,
         DieSkill::Speed,
         DieSkill::Stealth,
         DieSkill::Stinger,
@@ -50,11 +54,13 @@ impl DieSkill {
             DieSkill::Fire => 'F',
             DieSkill::Focus => 'f',
             DieSkill::Konstant => 'k',
+            DieSkill::Mighty => 'H',
             DieSkill::Null => 'n',
             DieSkill::Poison => 'p',
             DieSkill::Queer => 'q',
             DieSkill::Reserve => 'r',
             DieSkill::Shadow => 's',
+            DieSkill::Slow => 'w',
             DieSkill::Speed => 'z',
             DieSkill::Stealth => 'd',
             DieSkill::Stinger => 'g',
@@ -135,6 +141,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.5",
             "Ne se relance jamais. Pas d'attaque Power ni Skill seul ; dans une attaque Skill à plusieurs dés, ajoute ou soustrait sa valeur.",
         ),
+        DieSkill::Mighty => (
+            "Mighty",
+            "R 6.17",
+            "Grandit d'un cran à chaque relance : 1, 2, 4, 6, 8, 10, 12, 16, 20, 30.",
+        ),
         DieSkill::Null => (
             "Null",
             "R 6.6",
@@ -160,6 +171,7 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.10",
             "Pas d'attaque Power. Capture un dé de valeur supérieure ou égale à la sienne, sans dépasser sa taille.",
         ),
+        DieSkill::Slow => ("Slow", "R 6.16", "Ne compte pas pour l'initiative."),
         DieSkill::Speed => (
             "Speed",
             "R 6.9",
@@ -208,7 +220,7 @@ mod tests {
         letters.sort();
         letters.dedup();
         assert_eq!(letters.len(), DieSkill::ALL.len());
-        assert_eq!(DieSkill::from_letter('o'), None); // Ornery : hors v1
+        assert_eq!(DieSkill::from_letter('D'), None); // Doppelganger : hors jalon 4
     }
 
     #[test]

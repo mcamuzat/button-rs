@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use crate::error::{ReactionError, RuleError};
-use crate::event::GameEvent;
+use crate::event::{GameEvent, ResizeCause};
 use crate::hooks;
 use crate::ids::DieId;
 use crate::ids::PlayerId;
@@ -159,7 +159,15 @@ pub(crate) fn chance_reroll(
     if !die.has(DieSkill::Chance) {
         return Err(reaction(ReactionError::NotChance { die: id }));
     }
-    hooks::reroll(die, rng);
+    // R 6.17 + R 7.5: a Chance reroll makes a Mighty die grow.
+    if let Some(from) = hooks::reroll(die, rng, hooks::RerollCause::Normal) {
+        events.push(GameEvent::DieResized {
+            die: id,
+            from,
+            to: die.sides,
+            cause: ResizeCause::Mighty,
+        });
+    }
     let value = die.value;
     events.push(GameEvent::ChanceRerolled {
         player,

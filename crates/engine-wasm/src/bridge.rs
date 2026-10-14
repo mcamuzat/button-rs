@@ -169,7 +169,10 @@ mod tests {
         assert_eq!(catalog["entries"].as_array().unwrap().len(), 20);
         assert_eq!(catalog["editions"][0]["category"], "Original");
         let skills: serde_json::Value = serde_json::from_str(&skills()).unwrap();
-        assert_eq!(skills.as_array().unwrap().len(), 15);
+        assert_eq!(
+            skills.as_array().unwrap().len(),
+            buttonmen_engine::DieSkill::ALL.len()
+        );
     }
 
     #[test]

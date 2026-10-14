@@ -160,6 +160,17 @@ impl Sides {
         }
     }
 
+    /// R 6.17: the next size in buttonweavers' grow list (BMDie::grow_shrink_die_sizes);
+    /// a size at or above the last one stays. A twin grows each of its halves.
+    pub fn grown(self) -> Sides {
+        const SIZES: [u8; 10] = [1, 2, 4, 6, 8, 10, 12, 16, 20, 30];
+        let grow = |n: u8| SIZES.into_iter().find(|&s| s > n).unwrap_or(n);
+        match self {
+            Sides::Single(n) => Sides::Single(grow(n)),
+            Sides::Twin(a, b) => Sides::Twin(grow(a), grow(b)),
+        }
+    }
+
     /// R 6.1: half the sides, rounded up; a twin halves each of its halves.
     pub fn halved(self) -> Sides {
         match self {

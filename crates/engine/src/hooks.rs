@@ -2,17 +2,17 @@
 //! Each hook matches every `DieSkill` explicitly, so a new skill must decide each hook.
 
 use crate::action::AttackKind;
-use crate::die::Die;
+use crate::die::{Die, Sides};
 use crate::rng::SeededRng;
 use crate::skill::DieSkill;
 use crate::state::CaptureScoring;
 use std::collections::BTreeSet;
 
-/// R 3.3 + R 6.13 + R 6.14: does this die count when comparing initiative?
+/// R 3.3 + R 6.13 + R 6.14 + R 6.16: does this die count when comparing initiative?
 pub(crate) fn counts_for_initiative(die: &Die) -> bool {
     die.skills.iter().all(|skill| match skill {
-        // R 6.13 / R 6.14: Stinger and Trip dice are ignored for initiative.
-        DieSkill::Stinger | DieSkill::Trip => false,
+        // R 6.13 / R 6.14 / R 6.16: Stinger, Trip and Slow dice are ignored for initiative.
+        DieSkill::Slow | DieSkill::Stinger | DieSkill::Trip => false,
         DieSkill::Berserk
         | DieSkill::Chance
         | DieSkill::Fire
@@ -25,6 +25,7 @@ pub(crate) fn counts_for_initiative(die: &Die) -> bool {
         | DieSkill::Shadow
         | DieSkill::Speed
         | DieSkill::Stealth
+        | DieSkill::Mighty
         | DieSkill::Value => true,
     })
 }
@@ -47,15 +48,55 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::Stealth
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
         | DieSkill::Value => true,
     })
 }
 
-/// Rerolls a die, honouring `rerolls`.
-pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng) {
-    if rerolls(die) {
-        die.value = die.sides.roll(rng);
+/// Why a die is rerolled. Mighty (and Mood, in milestone 4B) skip the die that has just
+/// made a Trip attack (BMSkillMighty::pre_roll, flag `JustPerformedTripAttack`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RerollCause {
+    Normal,
+    TripAttacker,
+}
+
+/// R 6.17: does this die grow before each reroll?
+fn grows_on_reroll(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Mighty => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Null
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::Trip
+        | DieSkill::Value => false,
+    })
+}
+
+/// Rerolls a die, honouring `rerolls` (R 6.5) and Mighty (R 6.17). Returns the sides
+/// before a Mighty growth when the die grew.
+pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng, cause: RerollCause) -> Option<Sides> {
+    if !rerolls(die) {
+        return None;
     }
+    let before = die.sides;
+    if grows_on_reroll(die) && cause != RerollCause::TripAttacker {
+        die.sides = die.sides.grown();
+    }
+    die.value = die.sides.roll(rng);
+    (die.sides != before).then_some(before)
 }
 
 /// Which attacks this die can make (R 4.2, R 4.3, R 6.1, R 6.3, R 6.5, R 6.8–6.10,
@@ -95,6 +136,8 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Reserve
             | DieSkill::Stealth
             | DieSkill::Stinger
+            | DieSkill::Mighty
+            | DieSkill::Slow
             | DieSkill::Value => {}
         }
     }
@@ -126,6 +169,8 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Speed
             | DieSkill::Stinger
             | DieSkill::Trip
+            | DieSkill::Mighty
+            | DieSkill::Slow
             | DieSkill::Value => {}
         }
     }
@@ -148,6 +193,8 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::Speed
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
         | DieSkill::Value => false,
     })
 }
@@ -169,6 +216,8 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::Speed
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
         | DieSkill::Value => true,
     })
 }
@@ -193,6 +242,8 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::Speed
             | DieSkill::Stealth
             | DieSkill::Trip
+            | DieSkill::Mighty
+            | DieSkill::Slow
             | DieSkill::Value => {}
         }
     }
@@ -226,6 +277,8 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::Speed
                 | DieSkill::Stealth
                 | DieSkill::Stinger
+                | DieSkill::Mighty
+                | DieSkill::Slow
                 | DieSkill::Trip => {}
             }
         }
