@@ -1,6 +1,7 @@
 import type { AttackKind } from "../engine/generated/AttackKind";
 import type { DieSkill } from "../engine/generated/DieSkill";
 import type { DieView } from "../engine/generated/DieView";
+import type { GameEvent } from "../engine/generated/GameEvent";
 import type { PlayerId } from "../engine/generated/PlayerId";
 import type { SkillInfo } from "../engine/generated/SkillInfo";
 
@@ -27,4 +28,15 @@ export function turnText(names: Record<PlayerId, string>, mySeat: PlayerId | nul
 /** "Vous gagnez" for the person in front of the screen, "<name> gagne" otherwise. */
 export function winnerText(names: Record<PlayerId, string>, mySeat: PlayerId | null, winner: PlayerId): string {
   return winner === mySeat ? "Vous gagnez" : `${names[winner]} gagne`;
+}
+
+/** "Vous rejouez" / "<name> rejoue" when the last action gave an extra turn (R 6.19). */
+export function extraTurnText(
+  events: GameEvent[],
+  names: Record<PlayerId, string>,
+  mySeat: PlayerId | null,
+): string | null {
+  const extra = events.find((e) => e.type === "ExtraTurn");
+  if (!extra || extra.type !== "ExtraTurn") return null;
+  return extra.player === mySeat ? "Vous rejouez (TimeAndSpace)" : `${names[extra.player]} rejoue (TimeAndSpace)`;
 }

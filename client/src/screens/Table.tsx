@@ -7,6 +7,7 @@ import { ActionArea } from "../table/ActionArea";
 import { Handoff } from "../table/Handoff";
 import { MatchEnd } from "../table/MatchEnd";
 import { PlayerArea } from "../table/PlayerArea";
+import { extraTurnText } from "../table/labels";
 import { selectableDice, toggle, type Selection } from "../table/selection";
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
 const EMPTY: Selection = { attackers: [], targets: [] };
 
 export function Table({ adapter, onLeave }: Props) {
-  const { view, version, thinking, failure } = useGame(adapter);
+  const { view, version, thinking, failure, lastEvents } = useGame(adapter);
   const [selection, setSelection] = useState<Selection>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const seat = view.viewer.type === "Seat" ? view.viewer.player : null;
@@ -78,6 +79,11 @@ export function Table({ adapter, onLeave }: Props) {
         </div>
       </header>
       {area(two)}
+      {extraTurnText(lastEvents, adapter.names, adapter.mySeat) && (
+        <p role="status" className="rounded-lg bg-gold/90 px-4 py-2 text-ink">
+          {extraTurnText(lastEvents, adapter.names, adapter.mySeat)}
+        </p>
+      )}
       <ActionArea
         key={version}
         view={view}

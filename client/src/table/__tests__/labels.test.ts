@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { DieView } from "../../engine/generated/DieView";
 import type { SkillInfo } from "../../engine/generated/SkillInfo";
-import { attackLabel, skillTitle, turnText, winnerText } from "../labels";
+import { attackLabel, extraTurnText, skillTitle, turnText, winnerText } from "../labels";
 
 describe("labels", () => {
   it("names attack kinds", () => {
     expect(attackLabel("Power")).toBe("Power");
     expect(attackLabel("Skill")).toBe("Skill");
+  });
+
+  it("announces an extra turn from the engine's events", () => {
+    const names = { One: "Vous", Two: "IA (Normal)" } as const;
+    expect(extraTurnText([{ type: "ExtraTurn", player: "One" }], names, "One")).toBe("Vous rejouez (TimeAndSpace)");
+    expect(extraTurnText([{ type: "ExtraTurn", player: "Two" }], names, "One")).toBe(
+      "IA (Normal) rejoue (TimeAndSpace)",
+    );
+    expect(extraTurnText([{ type: "Passed", player: "Two" }], names, "One")).toBeNull();
+  });
+
+  it("keeps the names of the new attack kinds", () => {
+    expect(attackLabel("Rush")).toBe("Rush");
+    expect(attackLabel("Boom")).toBe("Boom");
   });
 
   it("builds a die tooltip from engine-provided skill texts", () => {
