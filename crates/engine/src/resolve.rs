@@ -74,7 +74,7 @@ pub(crate) fn resolve_attack(
                 if attack.kind == AttackKind::Berserk {
                     shrink(state, player, attacker, events);
                 }
-                reroll(state, player, attacker, hooks::RerollCause::Normal, events);
+                reroll(state, player, attacker, events);
             }
         }
     }
@@ -100,7 +100,7 @@ pub(crate) fn resolve_attack(
         .map(|d| d.id)
         .collect();
     for id in ornery {
-        reroll(state, player, id, hooks::RerollCause::Normal, events);
+        reroll(state, player, id, events);
     }
     plays_again
 }
@@ -153,16 +153,10 @@ fn capture(
     });
 }
 
-fn reroll(
-    state: &mut GameState,
-    owner: PlayerId,
-    id: DieId,
-    cause: hooks::RerollCause,
-    events: &mut Vec<GameEvent>,
-) {
+fn reroll(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<GameEvent>) {
     let GameState { players, rng, .. } = state;
     if let Some(die) = players[owner.index()].die_mut(id) {
-        if let Some(from) = hooks::reroll(die, rng, cause) {
+        if let Some(from) = hooks::reroll(die, rng) {
             events.push(GameEvent::DieResized {
                 die: id,
                 from,
@@ -204,13 +198,7 @@ fn resolve_boom(
         .expect("legal attacker");
     let die = state.player_mut(player).active.remove(index);
     state.player_mut(player).out_of_play.push(die);
-    reroll(
-        state,
-        player.other(),
-        target,
-        hooks::RerollCause::Normal,
-        events,
-    );
+    reroll(state, player.other(), target, events);
     let value = state
         .player(player.other())
         .die(target)
@@ -231,20 +219,8 @@ fn resolve_trip(
     target: DieId,
     events: &mut Vec<GameEvent>,
 ) {
-    reroll(
-        state,
-        player,
-        attacker,
-        hooks::RerollCause::TripAttacker,
-        events,
-    );
-    reroll(
-        state,
-        player.other(),
-        target,
-        hooks::RerollCause::Normal,
-        events,
-    );
+    reroll(state, player, attacker, events);
+    reroll(state, player.other(), target, events);
     let attacker_value = state
         .player(player)
         .die(attacker)

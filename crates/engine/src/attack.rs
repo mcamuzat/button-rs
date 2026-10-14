@@ -128,7 +128,8 @@ fn values_allow(kind: AttackKind, p: &Participants) -> bool {
         // (BMAttackTrip::is_disabled_by_konstant).
         AttackKind::Trip => {
             let best = if hooks::rerolls(first_attacker) {
-                first_attacker.max()
+                // R 6.17: a Mighty attacker grows before its Trip roll.
+                hooks::max_after_reroll(first_attacker)
             } else {
                 first_attacker.value
             };

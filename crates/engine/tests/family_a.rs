@@ -71,21 +71,36 @@ fn a_mighty_attacker_grows_before_rerolling() {
 }
 
 #[test]
-fn mighty_grows_on_a_trip_target_but_not_on_the_trip_attacker() {
-    // BMSkillMighty::pre_roll skips only the die that just made the Trip attack.
+fn mighty_grows_on_both_dice_of_a_trip() {
+    // BMSkillTrip::pre_capture rolls the attacker before flagging it, so it grows once
+    // (buttonweavers' test_trip_mighty_round: tH(8) becomes a d10, H(12) a d16).
     let s = attack_state(
         vec![die(6, 2).with(DieSkill::Trip).with(DieSkill::Mighty)],
         vec![die(4, 4).with(DieSkill::Mighty), die(20, 20)],
         One,
     );
     let (after, _) = ok(&s, One, attack(&s, AttackKind::Trip, &[0], &[0]));
-    assert_eq!(active(&after, One, 0).sides, Sides::Single(6));
+    assert_eq!(active(&after, One, 0).sides, Sides::Single(8));
     let target = after
         .player(Two)
         .die(id(&s, Two, 0))
         .map(|d| d.sides)
         .or_else(|| after.player(One).captured.first().map(|c| c.die.sides));
     assert_eq!(target, Some(Sides::Single(6)));
+}
+
+#[test]
+fn a_mighty_trip_die_counts_its_grown_size_for_legality() {
+    // BMAttackTrip::post_trip_roll_max: a d4 that grows to a d6 can reach a Konstant 5.
+    let s = attack_state(
+        vec![die(4, 1).with(DieSkill::Trip).with(DieSkill::Mighty)],
+        vec![die(6, 5).with(DieSkill::Konstant)],
+        One,
+    );
+    let Action::Attack { attack } = attack(&s, AttackKind::Trip, &[0], &[0]) else {
+        unreachable!()
+    };
+    assert_eq!(check_attack(&s, One, &attack), Ok(()));
 }
 
 #[test]

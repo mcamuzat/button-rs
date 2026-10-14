@@ -160,7 +160,7 @@ pub(crate) fn chance_reroll(
         return Err(reaction(ReactionError::NotChance { die: id }));
     }
     // R 6.17 + R 7.5: a Chance reroll makes a Mighty die grow.
-    if let Some(from) = hooks::reroll(die, rng, hooks::RerollCause::Normal) {
+    if let Some(from) = hooks::reroll(die, rng) {
         events.push(GameEvent::DieResized {
             die: id,
             from,

@@ -64,14 +64,6 @@ pub(crate) fn rerolls(die: &Die) -> bool {
     })
 }
 
-/// Why a die is rerolled. Mighty (and Mood, in milestone 4B) skip the die that has just
-/// made a Trip attack (BMSkillMighty::pre_roll, flag `JustPerformedTripAttack`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RerollCause {
-    Normal,
-    TripAttacker,
-}
-
 /// R 6.17: does this die grow before each reroll?
 fn grows_on_reroll(die: &Die) -> bool {
     die.skills.iter().any(|skill| match skill {
@@ -100,14 +92,25 @@ fn grows_on_reroll(die: &Die) -> bool {
     })
 }
 
-/// Rerolls a die, honouring `rerolls` (R 6.5) and Mighty (R 6.17). Returns the sides
-/// before a Mighty growth when the die grew.
-pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng, cause: RerollCause) -> Option<Sides> {
+/// The highest value this die can show once rerolled: a Mighty die grows first (R 6.17,
+/// BMAttackTrip::post_trip_roll_max).
+pub(crate) fn max_after_reroll(die: &Die) -> u8 {
+    if grows_on_reroll(die) {
+        die.sides.grown().max()
+    } else {
+        die.max()
+    }
+}
+
+/// Rerolls a die, honouring `rerolls` (R 6.5) and Mighty (R 6.17), whatever the reason
+/// (attack, Trip, Boom, Ornery, Chance). Returns the sides before a Mighty growth when
+/// the die grew.
+pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng) -> Option<Sides> {
     if !rerolls(die) {
         return None;
     }
     let before = die.sides;
-    if grows_on_reroll(die) && cause != RerollCause::TripAttacker {
+    if grows_on_reroll(die) {
         die.sides = die.sides.grown();
     }
     die.value = die.sides.roll(rng);
