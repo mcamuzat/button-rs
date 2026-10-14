@@ -206,3 +206,59 @@ fn completes_a_fire_attack_it_started() {
         }
     }
 }
+
+#[test]
+fn ai_matches_with_family_a_skills_always_end() {
+    use buttonmen_ai::{Level, choose_action};
+    use buttonmen_engine::DieSkill::*;
+    let a = button(
+        "A",
+        vec![
+            fixed(4).with(Boom),
+            fixed(6).with(Rush),
+            fixed(8).with(Rage),
+            fixed(10).with(Ornery),
+            fixed(12).with(TimeAndSpace),
+        ],
+    );
+    let b = button(
+        "B",
+        vec![
+            fixed(4).with(Slow),
+            fixed(6).with(Mighty),
+            fixed(8).with(Rush),
+            fixed(10),
+            fixed(20).with(Boom),
+        ],
+    );
+    for seed in 0..6u64 {
+        let mut state = new_game([a.clone(), b.clone()], seed, MatchConfig::default());
+        let mut steps = 0;
+        while !matches!(state.waiting_for, WaitingFor::GameOver { .. }) {
+            let actor = state.actors()[0];
+            let action =
+                choose_action(&state, actor, Level::Normal, seed + steps).expect("an action");
+            state = apply(&state, actor, action).expect("legal").0;
+            steps += 1;
+            assert!(steps < 3000, "no end");
+        }
+    }
+}
+
+#[test]
+fn attack_gain_never_values_a_boom_as_a_capture() {
+    use buttonmen_ai::attack_gain;
+    use buttonmen_engine::testing::{attack_state, die, id};
+    use buttonmen_engine::{AttackKind, DeclaredAttack, DieSkill};
+    let s = attack_state(
+        vec![die(8, 2).with(DieSkill::Boom), die(4, 1)],
+        vec![die(20, 20)],
+        One,
+    );
+    let boom = DeclaredAttack {
+        kind: AttackKind::Boom,
+        attackers: vec![id(&s, One, 0)],
+        targets: vec![id(&s, Two, 0)],
+    };
+    assert!(attack_gain(&s, One, &boom) < 0.0);
+}

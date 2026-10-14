@@ -1,33 +1,23 @@
 use buttonmen_engine::{
     Action, AttackKind, DeclaredAttack, GameState, LegalActions, PlayerId, SeededRng, SpecChoice,
-    WaitingFor, apply, candidate_actions, legal_actions,
+    WaitingFor, apply, attack_swing, candidate_actions, legal_actions,
 };
 
-use crate::eval::{capture_gain, evaluate};
+use crate::eval::evaluate;
 use crate::observe::reseeded;
 
 /// Bounds a rollout even in a round that would never end.
 const MAX_ROLLOUT_STEPS: usize = 400;
 
-/// What `attack` is expected to swing towards `player` (spec §7, greedy move ordering).
-/// A Trip only captures sometimes: half its gain.
+/// What `attack` is expected to swing towards `player` (spec §7, greedy move ordering), as
+/// the engine scores it (`attack_swing`: captures, Rage, Boom). A Trip only captures
+/// sometimes: half its gain.
 pub fn attack_gain(state: &GameState, player: PlayerId, attack: &DeclaredAttack) -> f64 {
-    let attackers: Vec<_> = attack
-        .attackers
-        .iter()
-        .filter_map(|&id| state.player(player).die(id))
-        .collect();
-    let defender = state.player(player.other());
-    let gain: f64 = attack
-        .targets
-        .iter()
-        .filter_map(|&id| defender.die(id))
-        .map(|target| capture_gain(&attackers, target))
-        .sum();
+    let swing = f64::from(attack_swing(state, player, attack));
     if attack.kind == AttackKind::Trip {
-        gain / 2.0
+        swing / 2.0
     } else {
-        gain
+        swing
     }
 }
 
