@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AiAdapter } from "./adapters/AiAdapter";
 import type { GameAdapter } from "./adapters/GameAdapter";
 import { LocalAdapter } from "./adapters/LocalAdapter";
+import type { Catalog } from "./engine/generated/Catalog";
 import type { CatalogEntry } from "./engine/generated/CatalogEntry";
 import { WorkerBrain } from "./ai/brain";
 import type { DieSkill } from "./engine/generated/DieSkill";
@@ -17,7 +18,7 @@ type Screen = { kind: "home" } | { kind: "pick"; vsAi: boolean } | { kind: "tabl
 
 export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: "home" });
-  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(null);
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [skills, setSkills] = useState<Map<DieSkill, SkillInfo>>(new Map());
   const [error, setError] = useState<string | null>(null);
 

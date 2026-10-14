@@ -85,7 +85,7 @@ pub fn catalog(imported_json: Option<&str>) -> Result<String, String> {
     if let Some(json) = imported_json {
         recipes.extend(parse_buttonweavers_json(json).map_err(|e| e.to_string())?);
     }
-    Ok(to_json(&buttonmen_data::catalog(&recipes)))
+    Ok(to_json(&buttonmen_data::build_catalog(&recipes)))
 }
 
 pub fn skills() -> String {
@@ -166,7 +166,8 @@ mod tests {
     #[test]
     fn catalog_and_skills_serialize() {
         let catalog: serde_json::Value = serde_json::from_str(&catalog(None).unwrap()).unwrap();
-        assert_eq!(catalog.as_array().unwrap().len(), 20);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 20);
+        assert_eq!(catalog["editions"][0]["category"], "Original");
         let skills: serde_json::Value = serde_json::from_str(&skills()).unwrap();
         assert_eq!(skills.as_array().unwrap().len(), 15);
     }

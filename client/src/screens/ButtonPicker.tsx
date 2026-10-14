@@ -1,33 +1,49 @@
 import { useMemo, useState } from "react";
 import { levelLabel } from "../adapters/AiAdapter";
+import type { Catalog } from "../engine/generated/Catalog";
 import type { CatalogEntry } from "../engine/generated/CatalogEntry";
 import type { Level } from "../engine/generated/Level";
-import { filterCatalog, type SourceFilter } from "./catalogFilter";
+import type { SetCategory } from "../engine/generated/SetCategory";
+import { type CategoryFilter, categoriesOf, defaultCategory, editionsOf, filterCatalog } from "./catalogFilter";
 
 interface Props {
-  catalog: CatalogEntry[];
+  catalog: Catalog;
   /** Seat 2 is played by the AI. */
   vsAi: boolean;
   onStart: (one: CatalogEntry, two: CatalogEntry, level: Level) => void;
   onBack: () => void;
 }
 
-const SOURCES: { value: SourceFilter; label: string }[] = [
-  { value: "Original", label: "Originaux" },
-  { value: "Buttonweavers", label: "buttonweavers" },
-  { value: "all", label: "Tous" },
-];
+const CATEGORY_LABELS: Record<SetCategory, string> = {
+  Official: "Officielles",
+  Original: "Originaux",
+  Online: "Button Men Online",
+  Unofficial: "Fans",
+  Fanatics: "Fanatics",
+  Special: "Spéciaux",
+  Other: "Autres",
+};
 
 const LEVELS: Level[] = ["Easy", "Normal", "Hard"];
 
 export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
   const [level, setLevel] = useState<Level>("Normal");
   const [query, setQuery] = useState("");
-  const [source, setSource] = useState<SourceFilter>("Original");
+  const [category, setCategory] = useState<CategoryFilter>(() => defaultCategory(catalog.editions));
+  const [edition, setEdition] = useState<string | null>(null);
   const [picks, setPicks] = useState<[CatalogEntry | null, CatalogEntry | null]>([null, null]);
   const [seat, setSeat] = useState<0 | 1>(0);
-  const hasImport = catalog.some((e) => e.source === "Buttonweavers");
-  const shown = useMemo(() => filterCatalog(catalog, query, source), [catalog, query, source]);
+  const categories = categoriesOf(catalog.editions);
+  const editions = editionsOf(catalog.editions, category);
+  const shown = useMemo(
+    () => filterCatalog(catalog.entries, { query, category, edition }),
+    [catalog, query, category, edition],
+  );
+
+  function chooseCategory(next: CategoryFilter) {
+    setCategory(next);
+    setEdition(null);
+  }
 
   function pick(entry: CatalogEntry) {
     const next: [CatalogEntry | null, CatalogEntry | null] = [...picks];
@@ -72,17 +88,6 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
           placeholder="Rechercher un bouton"
           className="min-w-48 flex-1 rounded-lg bg-ivory px-3 py-2 text-ink"
         />
-        {hasImport &&
-          SOURCES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => setSource(s.value)}
-              className={`rounded-lg px-3 py-2 ${source === s.value ? "bg-gold text-ink" : "bg-felt-dark"}`}
-            >
-              {s.label}
-            </button>
-          ))}
         {vsAi &&
           LEVELS.map((l) => (
             <button
@@ -106,6 +111,36 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
           Jouer
         </button>
       </div>
+
+      {categories.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {[...categories, "all" as const].map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => chooseCategory(c)}
+              className={`rounded-lg px-3 py-2 ${category === c ? "bg-gold text-ink" : "bg-felt-dark"}`}
+            >
+              {c === "all" ? "Toutes" : CATEGORY_LABELS[c]}
+            </button>
+          ))}
+          {editions.length > 1 && (
+            <select
+              value={edition ?? ""}
+              onChange={(e) => setEdition(e.target.value === "" ? null : e.target.value)}
+              className="rounded-lg bg-felt-dark px-3 py-2"
+              aria-label="Édition"
+            >
+              <option value="">Toutes les éditions ({editions.length})</option>
+              {editions.map((ed) => (
+                <option key={`${ed.category}-${ed.name}`} value={ed.name}>
+                  {ed.name} ({ed.playable}/{ed.total})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((e) => {

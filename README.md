@@ -8,7 +8,7 @@ Voir `docs/superpowers/specs/` pour la conception.
 
 ## Boutons buttonweavers (facultatif, usage privé)
 
-`./scripts/import-buttonweavers.sh` importe les ~880 boutons de Button Men Online dans `data/buttonweavers/buttons.json` (gitignoré). Les noms des personnages appartiennent à Cheapass Games : ce fichier n'est pas versionné ni diffusé. Les boutons qui utilisent des compétences hors v1 apparaissent « non jouables ».
+`./scripts/import-buttonweavers.sh` importe les ~880 boutons de Button Men Online dans `data/buttonweavers/buttons.json` (gitignoré). Les noms des personnages appartiennent à Cheapass Games : ce fichier n'est pas versionné ni diffusé. Les boutons qui utilisent des compétences hors v1 apparaissent « non jouables ». L'import retient aussi la catégorie de chaque édition (officielle, Button Men Online, fans, Fanatics) : relancez-le si l'écran de choix range tout dans « Autres ».
 
 ## Lancer en local
 

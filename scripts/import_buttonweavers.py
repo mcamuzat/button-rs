@@ -15,6 +15,26 @@ ROW = re.compile(
 )
 
 
+# Sections of the buttonset table (comment lines), first word -> SetCategory (crates/button-data).
+CATEGORIES = {"official": "Official", "button": "Online", "unofficial": "Unofficial", "fanatics": "Fanatics", "special": "Special"}
+SET = re.compile(r"""^\(\s*\d+\s*,\s*'((?:[^'\\]|\\.)*)'""")
+
+
+def read_sets(text: str) -> dict:
+    """Edition name -> (category, release order), from the buttonset INSERT."""
+    start = text.index("INSERT INTO buttonset")
+    end = text.index(";", start)
+    sets, category = {}, "Other"
+    for line in text[start:end].splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            first = line.lstrip("# ").split(" ")[0].lower()
+            category = CATEGORIES.get(first, "Other")
+        elif m := SET.match(line):
+            sets[unescape(m.group(1))] = (category, len(sets))
+    return sets
+
+
 def unescape(text: str) -> str:
     return re.sub(r"\\(.)", r"\1", text)
 
@@ -22,10 +42,14 @@ def unescape(text: str) -> str:
 def main(source: str, target: str) -> None:
     with open(source, encoding="utf-8") as f:
         text = f.read()
-    buttons = [
-        {"name": unescape(name), "recipe": unescape(recipe), "set": button_set, "special": special == "1"}
-        for name, recipe, special, button_set in ROW.findall(text)
-    ]
+    sets = read_sets(text)
+    buttons = []
+    for name, recipe, special, button_set in ROW.findall(text):
+        category, order = sets.get(button_set, ("Other", len(sets)))
+        buttons.append({
+            "name": unescape(name), "recipe": unescape(recipe), "set": button_set,
+            "category": category, "set_order": order, "special": special == "1",
+        })
     if not buttons:
         sys.exit("aucun bouton trouvé : le format de data.button.sql a-t-il changé ?")
     os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
