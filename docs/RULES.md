@@ -21,13 +21,13 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 
 - **R 3.1** Au premier tour, chaque joueur choisit ses tailles Swing et Option, en secret ; les choix sont révélés ensemble.
 - **R 3.2** Tous les dés en jeu sont lancés. Les dés capturés à la manche précédente reviennent à leur propriétaire ; chaque manche repart de la recette (hors dés Reserve ajoutés, R 6.11).
-- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
+- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger, R 6.16 Slow, R 6.20 Rage). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
 - **R 3.4** Égalité complète : le premier joueur est tiré au sort.
 - **R 3.5 Réactions.** Le joueur qui n'a pas l'initiative peut réagir avec ses dés Focus (R 6.4) ou Chance (R 6.2), ou laisser l'autre commencer. S'il prend l'initiative, l'autre peut réagir à son tour, et ainsi de suite.
 
 ## R 4 — Tour de jeu
 
-- **R 4.1** À son tour, un joueur doit attaquer s'il le peut. Il ne passe que s'il n'a aucune attaque possible (y compris avec l'aide de Fire, R 6.3).
+- **R 4.1** À son tour, un joueur doit attaquer s'il le peut. Il ne passe que s'il n'a aucune attaque possible (y compris avec l'aide de Fire, R 6.3, ou une attaque Boom, R 6.22).
 - **R 4.2 Power.** Un dé capture un dé adverse dont la valeur est inférieure ou égale à la sienne.
 - **R 4.3 Skill.** Un ou plusieurs dés capturent un dé adverse dont la valeur est exactement la somme des leurs.
 - **R 4.4 Après l'attaque.** Les dés capturés passent dans la pile de score de l'attaquant ; les dés attaquants sont relancés.
@@ -55,6 +55,13 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.13 Stinger (g).** Dans une attaque Skill, compte pour n'importe quelle valeur entre sa valeur minimale et sa valeur actuelle. Ne compte pas pour l'initiative.
 - **R 6.14 Trip (t).** Peut faire des attaques Trip : on choisit un dé adverse, on relance les deux dés ; si le dé Trip montre alors une valeur supérieure ou égale, la cible est capturée, sinon les deux dés gardent leurs nouvelles valeurs. Une attaque Trip sans aucune chance de capturer est illégale : la meilleure valeur possible du Trip (sa taille, ou sa valeur s'il est Konstant) doit atteindre la plus basse valeur possible de la cible (sa valeur minimale, ou sa valeur si elle est Konstant). Ne compte pas pour l'initiative.
 - **R 6.15 Value (v).** Un dé Value compte comme si sa taille était égale à sa valeur actuelle. Quand un dé Value participe à une attaque, les dés capturés comptent pour la valeur qu'ils montraient au moment de la capture.
+- **R 6.16 Slow (w).** Ne compte pas pour l'initiative. (Source : `BMSkillSlow.php`.)
+- **R 6.17 Mighty (H).** Chaque fois qu'il se relance, pour quelque raison que ce soit, le dé grandit d'abord jusqu'à la taille suivante de la liste 1, 2, 4, 6, 8, 10, 12, 16, 20, 30 (une taille hors liste passe à la suivante ; 30 et plus ne bougent pas ; un Twin fait grandir chaque moitié). Il ne grandit pas au jet de début de manche ni s'il ne se relance pas (Konstant). Un dé Mighty qui fait une attaque Trip grandit une fois, avant son jet, et la légalité du Trip tient compte de sa taille agrandie (`BMSkillTrip::pre_capture`, `BMAttackTrip::post_trip_roll_max`). Il compte à sa taille du moment. (Source : `BMSkillMighty.php`, `BMDie::grow`.)
+- **R 6.18 Ornery (o).** Se relance après chaque attaque de son propriétaire, qu'il y ait participé ou non (un attaquant Ornery ne se relance qu'une fois). Ne se relance pas quand le joueur passe. (Source : `BMSkillOrnery.php`.)
+- **R 6.19 TimeAndSpace (^).** Si un dé TimeAndSpace participe à une attaque et se relance sur une valeur impaire, son propriétaire joue un tour de plus ; un seul tour de plus par attaque. La manche s'arrête quand même si un joueur n'a plus de dés. (Source : `BMSkillTimeAndSpace.php`.)
+- **R 6.20 Rage (G).** Ne compte pas pour l'initiative. Quand un dé Rage est capturé, son propriétaire reçoit à sa place un clone (même taille, mêmes compétences sauf Rage), qui est lancé ; le clone disparaît à la fin de la manche comme tout dé hors recette. Un dé Rage qui participe à une attaque perd Rage. Une attaque Trip ratée ne capture pas et ne crée pas de clone. (Source : `BMSkillRage.php`, `BMAttack::commit_attack`.)
+- **R 6.21 Rush (#).** Attaque Rush : un seul dé capture exactement deux dés adverses dont la somme des valeurs égale la sienne. L'attaque est permise si l'attaquant ou au moins une des deux cibles est Rush : n'importe quel dé peut donc attaquer en Rush deux dés dont un est Rush. Un dé Stealth ne fait pas d'attaque Rush et ne peut pas en être la cible. (Source : `BMAttackRush.php`, `BMAttackSpeed::are_skills_compatible`, `BMAttack::possible_attack_types`.)
+- **R 6.22 Boom (b).** Attaque Boom : un dé Boom vise un dé adverse ; le dé Boom sort du jeu jusqu'à la fin de la manche et ne compte pour aucun des deux joueurs ; la cible est relancée, jamais capturée. Une attaque Boom possible interdit de passer (R 4.1). Un dé Stealth ne fait pas d'attaque Boom mais peut en être la cible. (Source : `BMSkillBoom.php`, `BMAttackBoom.php`.)
 
 ## R 7 — Interactions retenues
 
@@ -62,3 +69,5 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 7.2** Poison et Value se combinent : la base du calcul Poison est la valeur affichée.
 - **R 7.3** Konstant et Stinger se combinent : le dé compte pour toute valeur de ±1 à ±sa valeur.
 - **R 7.4** Un dé Focus baissé par le premier joueur reste inutilisable jusqu'à la fin de son premier tour.
+- **R 7.5** Chance et Mighty : une relance Chance fait grandir le dé. Berserk et Mighty : le dé est divisé, puis grandit en se relançant.
+- **R 7.6** Konstant et Ornery : le dé garde sa valeur lors de la relance Ornery. Konstant et TimeAndSpace : un attaquant Konstant ne se relance pas et ne donne pas de tour supplémentaire.

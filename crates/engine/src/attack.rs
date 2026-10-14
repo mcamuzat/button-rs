@@ -55,9 +55,13 @@ fn gather<'a>(
 fn check_counts(kind: AttackKind, p: &Participants) -> Result<(), AttackError> {
     let (a, t) = (p.attackers.len(), p.targets.len());
     let ok = match kind {
-        AttackKind::Power | AttackKind::Shadow | AttackKind::Trip => a == 1 && t == 1,
+        AttackKind::Power | AttackKind::Shadow | AttackKind::Trip | AttackKind::Boom => {
+            a == 1 && t == 1
+        }
         AttackKind::Skill => a >= 1 && t == 1,
         AttackKind::Speed | AttackKind::Berserk => a == 1 && t >= 1,
+        // R 6.21.
+        AttackKind::Rush => a == 1 && t == 2,
     };
     if ok {
         Ok(())
@@ -74,6 +78,19 @@ fn check_skills(kind: AttackKind, p: &Participants) -> Result<(), AttackError> {
         if unavailable {
             return Err(AttackError::KindUnavailable { die: a.id, kind });
         }
+    }
+    // R 6.21: a Rush attack needs a Rush die, attacker or target.
+    if kind == AttackKind::Rush
+        && !p
+            .attackers
+            .iter()
+            .chain(&p.targets)
+            .any(|d| hooks::enables_rush(d))
+    {
+        return Err(AttackError::KindUnavailable {
+            die: p.attackers[0].id,
+            kind,
+        });
     }
     for t in &p.targets {
         if !hooks::can_be_captured(t, kind, n) {
@@ -111,7 +128,8 @@ fn values_allow(kind: AttackKind, p: &Participants) -> bool {
         // (BMAttackTrip::is_disabled_by_konstant).
         AttackKind::Trip => {
             let best = if hooks::rerolls(first_attacker) {
-                first_attacker.max()
+                // R 6.17: a Mighty attacker grows before its Trip roll.
+                hooks::max_after_reroll(first_attacker)
             } else {
                 first_attacker.value
             };
@@ -122,13 +140,15 @@ fn values_allow(kind: AttackKind, p: &Participants) -> bool {
             };
             best >= lowest
         }
-        // R 6.9 / R 6.1.
-        AttackKind::Speed | AttackKind::Berserk => {
+        // R 6.9 / R 6.1 / R 6.21.
+        AttackKind::Speed | AttackKind::Berserk | AttackKind::Rush => {
             p.targets.iter().map(|t| u32::from(t.value)).sum::<u32>()
                 == u32::from(first_attacker.value)
         }
         // R 4.3.
         AttackKind::Skill => skill_sums(&p.attackers).contains(&i32::from(first_target.value)),
+        // R 6.22: any target.
+        AttackKind::Boom => true,
     }
 }
 
@@ -174,12 +194,29 @@ pub(crate) fn attack_shapes(state: &GameState, player: PlayerId) -> Vec<Declared
     for a in &mine {
         let kinds = hooks::attack_kinds(a);
         for t in &theirs {
-            for kind in [AttackKind::Power, AttackKind::Shadow, AttackKind::Trip] {
+            for kind in [
+                AttackKind::Power,
+                AttackKind::Shadow,
+                AttackKind::Trip,
+                AttackKind::Boom,
+            ] {
                 if kinds.contains(&kind) {
                     candidates.push(DeclaredAttack {
                         kind,
                         attackers: vec![a.id],
                         targets: vec![t.id],
+                    });
+                }
+            }
+        }
+        // R 6.21: one attacker against each pair of dice.
+        if kinds.contains(&AttackKind::Rush) {
+            for (i, first) in theirs.iter().enumerate() {
+                for second in &theirs[i + 1..] {
+                    candidates.push(DeclaredAttack {
+                        kind: AttackKind::Rush,
+                        attackers: vec![a.id],
+                        targets: vec![first.id, second.id],
                     });
                 }
             }

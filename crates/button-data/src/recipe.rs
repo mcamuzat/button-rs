@@ -193,8 +193,8 @@ mod tests {
     #[test]
     fn rejects_unsupported_skills_and_dice() {
         assert_eq!(
-            parse_recipe("o(6)"),
-            Err(RecipeError::UnsupportedSkill { letter: 'o' })
+            parse_recipe("D(6)"),
+            Err(RecipeError::UnsupportedSkill { letter: 'D' })
         );
         assert_eq!(
             parse_recipe("+(6)"),

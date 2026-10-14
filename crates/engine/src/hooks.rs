@@ -2,17 +2,18 @@
 //! Each hook matches every `DieSkill` explicitly, so a new skill must decide each hook.
 
 use crate::action::AttackKind;
-use crate::die::Die;
+use crate::die::{Die, Sides};
 use crate::rng::SeededRng;
 use crate::skill::DieSkill;
 use crate::state::CaptureScoring;
 use std::collections::BTreeSet;
 
-/// R 3.3 + R 6.13 + R 6.14: does this die count when comparing initiative?
+/// R 3.3 + R 6.13 + R 6.14 + R 6.16 + R 6.20: does this die count when comparing initiative?
 pub(crate) fn counts_for_initiative(die: &Die) -> bool {
     die.skills.iter().all(|skill| match skill {
-        // R 6.13 / R 6.14: Stinger and Trip dice are ignored for initiative.
-        DieSkill::Stinger | DieSkill::Trip => false,
+        // R 6.13 / R 6.14 / R 6.16 / R 6.20: Stinger, Trip, Slow and Rage dice are ignored
+        // for initiative.
+        DieSkill::Rage | DieSkill::Slow | DieSkill::Stinger | DieSkill::Trip => false,
         DieSkill::Berserk
         | DieSkill::Chance
         | DieSkill::Fire
@@ -25,6 +26,11 @@ pub(crate) fn counts_for_initiative(die: &Die) -> bool {
         | DieSkill::Shadow
         | DieSkill::Speed
         | DieSkill::Stealth
+        | DieSkill::Mighty
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
+        | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
@@ -47,22 +53,191 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::Stealth
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
+        | DieSkill::Rage
+        | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
 
-/// Rerolls a die, honouring `rerolls`.
-pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng) {
-    if rerolls(die) {
-        die.value = die.sides.roll(rng);
+/// R 6.17: does this die grow before each reroll?
+fn grows_on_reroll(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Mighty => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Null
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::Trip
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
+        | DieSkill::Rage
+        | DieSkill::Rush
+        | DieSkill::Boom
+        | DieSkill::Value => false,
+    })
+}
+
+/// The highest value this die can show once rerolled: a Mighty die grows first (R 6.17,
+/// BMAttackTrip::post_trip_roll_max).
+pub(crate) fn max_after_reroll(die: &Die) -> u8 {
+    if grows_on_reroll(die) {
+        die.sides.grown().max()
+    } else {
+        die.max()
     }
+}
+
+/// Rerolls a die, honouring `rerolls` (R 6.5) and Mighty (R 6.17), whatever the reason
+/// (attack, Trip, Boom, Ornery, Chance). Returns the sides before a Mighty growth when
+/// the die grew.
+pub(crate) fn reroll(die: &mut Die, rng: &mut SeededRng) -> Option<Sides> {
+    if !rerolls(die) {
+        return None;
+    }
+    let before = die.sides;
+    if grows_on_reroll(die) {
+        die.sides = die.sides.grown();
+    }
+    die.value = die.sides.roll(rng);
+    (die.sides != before).then_some(before)
+}
+
+/// R 6.18: does this die reroll after every attack of its owner?
+pub(crate) fn rerolls_after_any_attack(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Ornery => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
+        | DieSkill::Rage
+        | DieSkill::Rush
+        | DieSkill::Boom
+        | DieSkill::Value => false,
+    })
+}
+
+/// R 6.19: does this attacker, rerolled to an odd value, give an extra turn?
+pub(crate) fn grants_extra_turn(die: &Die) -> bool {
+    die.value % 2 == 1
+        && rerolls(die)
+        && die.skills.iter().any(|skill| match skill {
+            DieSkill::TimeAndSpace => true,
+            DieSkill::Berserk
+            | DieSkill::Chance
+            | DieSkill::Fire
+            | DieSkill::Focus
+            | DieSkill::Konstant
+            | DieSkill::Mighty
+            | DieSkill::Null
+            | DieSkill::Ornery
+            | DieSkill::Poison
+            | DieSkill::Queer
+            | DieSkill::Reserve
+            | DieSkill::Shadow
+            | DieSkill::Slow
+            | DieSkill::Speed
+            | DieSkill::Stealth
+            | DieSkill::Stinger
+            | DieSkill::Trip
+            | DieSkill::Rage
+            | DieSkill::Rush
+            | DieSkill::Boom
+            | DieSkill::Value => false,
+        })
+}
+
+/// R 6.20: is this die replaced by a clone when it is captured?
+pub(crate) fn leaves_a_clone(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Rage => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Ornery
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
+        | DieSkill::Rush
+        | DieSkill::Boom
+        | DieSkill::Value => false,
+    })
+}
+
+/// R 6.21: does this die make Rush attacks possible (as attacker or as target)?
+pub(crate) fn enables_rush(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Rush => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Ornery
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Rage
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
+        | DieSkill::Boom
+        | DieSkill::Value => false,
+    })
 }
 
 /// Which attacks this die can make (R 4.2, R 4.3, R 6.1, R 6.3, R 6.5, R 6.8–6.10,
 /// R 6.12, R 6.14). Grants are applied first, then restrictions.
 pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
     let odd = die.value % 2 == 1;
-    let mut kinds = BTreeSet::from([AttackKind::Power, AttackKind::Skill]);
+    // R 6.21: any die may make a Rush attack (it still needs a Rush die among the dice
+    // involved, checked with the targets in `attack::check_skills`).
+    let mut kinds = BTreeSet::from([AttackKind::Power, AttackKind::Skill, AttackKind::Rush]);
     for skill in die.skills.iter() {
         match skill {
             // R 6.10.
@@ -85,6 +260,10 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             DieSkill::Berserk => {
                 kinds.insert(AttackKind::Berserk);
             }
+            // R 6.22.
+            DieSkill::Boom => {
+                kinds.insert(AttackKind::Boom);
+            }
             DieSkill::Queer
             | DieSkill::Chance
             | DieSkill::Fire
@@ -95,6 +274,12 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Reserve
             | DieSkill::Stealth
             | DieSkill::Stinger
+            | DieSkill::Mighty
+            | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
+            | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Value => {}
         }
     }
@@ -126,6 +311,13 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Speed
             | DieSkill::Stinger
             | DieSkill::Trip
+            | DieSkill::Mighty
+            | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
+            | DieSkill::Rage
+            | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Value => {}
         }
     }
@@ -148,14 +340,24 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::Speed
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
+        | DieSkill::Rage
+        | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
 
-/// R 6.12: can `target` be captured by a `kind` attack made by `attackers` dice?
+/// R 6.12 + R 6.22: may `target` be the target of a `kind` attack made by `attackers` dice?
 pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) -> bool {
     target.skills.iter().all(|skill| match skill {
-        DieSkill::Stealth => kind == AttackKind::Skill && attackers >= 2,
+        // R 6.12 + R 6.22: Boom only rerolls its target, and may aim at a Stealth die.
+        DieSkill::Stealth => {
+            (kind == AttackKind::Skill && attackers >= 2) || kind == AttackKind::Boom
+        }
         DieSkill::Berserk
         | DieSkill::Chance
         | DieSkill::Fire
@@ -169,6 +371,13 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::Speed
         | DieSkill::Stinger
         | DieSkill::Trip
+        | DieSkill::Mighty
+        | DieSkill::Slow
+        | DieSkill::Ornery
+        | DieSkill::TimeAndSpace
+        | DieSkill::Rage
+        | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
@@ -193,6 +402,13 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::Speed
             | DieSkill::Stealth
             | DieSkill::Trip
+            | DieSkill::Mighty
+            | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
+            | DieSkill::Rage
+            | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Value => {}
         }
     }
@@ -226,6 +442,13 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::Speed
                 | DieSkill::Stealth
                 | DieSkill::Stinger
+                | DieSkill::Mighty
+                | DieSkill::Slow
+                | DieSkill::Ornery
+                | DieSkill::TimeAndSpace
+                | DieSkill::Rage
+                | DieSkill::Rush
+                | DieSkill::Boom
                 | DieSkill::Trip => {}
             }
         }

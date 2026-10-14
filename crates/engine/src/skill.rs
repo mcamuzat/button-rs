@@ -7,37 +7,51 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub enum DieSkill {
     Berserk,
+    Boom,
     Chance,
     Fire,
     Focus,
     Konstant,
+    Mighty,
     Null,
+    Ornery,
     Poison,
     Queer,
+    Rage,
     Reserve,
+    Rush,
     Shadow,
+    Slow,
     Speed,
     Stealth,
     Stinger,
+    TimeAndSpace,
     Trip,
     Value,
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 15] = [
+    pub const ALL: [DieSkill; 22] = [
         DieSkill::Berserk,
+        DieSkill::Boom,
         DieSkill::Chance,
         DieSkill::Fire,
         DieSkill::Focus,
         DieSkill::Konstant,
+        DieSkill::Mighty,
         DieSkill::Null,
+        DieSkill::Ornery,
         DieSkill::Poison,
         DieSkill::Queer,
+        DieSkill::Rage,
         DieSkill::Reserve,
+        DieSkill::Rush,
         DieSkill::Shadow,
+        DieSkill::Slow,
         DieSkill::Speed,
         DieSkill::Stealth,
         DieSkill::Stinger,
+        DieSkill::TimeAndSpace,
         DieSkill::Trip,
         DieSkill::Value,
     ];
@@ -46,18 +60,25 @@ impl DieSkill {
     pub fn letter(self) -> char {
         match self {
             DieSkill::Berserk => 'B',
+            DieSkill::Boom => 'b',
             DieSkill::Chance => 'c',
             DieSkill::Fire => 'F',
             DieSkill::Focus => 'f',
             DieSkill::Konstant => 'k',
+            DieSkill::Mighty => 'H',
             DieSkill::Null => 'n',
+            DieSkill::Ornery => 'o',
             DieSkill::Poison => 'p',
             DieSkill::Queer => 'q',
+            DieSkill::Rage => 'G',
             DieSkill::Reserve => 'r',
+            DieSkill::Rush => '#',
             DieSkill::Shadow => 's',
+            DieSkill::Slow => 'w',
             DieSkill::Speed => 'z',
             DieSkill::Stealth => 'd',
             DieSkill::Stinger => 'g',
+            DieSkill::TimeAndSpace => '^',
             DieSkill::Trip => 't',
             DieSkill::Value => 'v',
         }
@@ -115,6 +136,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.1",
             "Pas d'attaque Skill. Attaque Berserk : capture des dés dont la somme égale sa valeur, puis perd Berserk et passe à la moitié de ses faces.",
         ),
+        DieSkill::Boom => (
+            "Boom",
+            "R 6.22",
+            "Attaque Boom : le dé sort du jeu (il ne compte pour personne) et fait relancer un dé adverse, sans le capturer.",
+        ),
         DieSkill::Chance => (
             "Chance",
             "R 6.2",
@@ -135,10 +161,20 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.5",
             "Ne se relance jamais. Pas d'attaque Power ni Skill seul ; dans une attaque Skill à plusieurs dés, ajoute ou soustrait sa valeur.",
         ),
+        DieSkill::Mighty => (
+            "Mighty",
+            "R 6.17",
+            "Grandit d'un cran à chaque relance : 1, 2, 4, 6, 8, 10, 12, 16, 20, 30.",
+        ),
         DieSkill::Null => (
             "Null",
             "R 6.6",
             "Vaut zéro point, et les dés qu'il aide à capturer valent zéro point.",
+        ),
+        DieSkill::Ornery => (
+            "Ornery",
+            "R 6.18",
+            "Se relance après chaque attaque de son propriétaire, même s'il n'y participe pas ; pas quand il passe.",
         ),
         DieSkill::Poison => (
             "Poison",
@@ -150,16 +186,27 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "R 6.8",
             "Normal sur une valeur paire, Shadow sur une valeur impaire.",
         ),
+        DieSkill::Rage => (
+            "Rage",
+            "R 6.20",
+            "Ne compte pas pour l'initiative. Capturé, il est remplacé chez son propriétaire par un clone sans Rage ; il perd Rage s'il attaque.",
+        ),
         DieSkill::Reserve => (
             "Reserve",
             "R 6.11",
             "Hors jeu au départ ; après une manche perdue, on peut le faire entrer en jeu pour la suite du match.",
+        ),
+        DieSkill::Rush => (
+            "Rush",
+            "R 6.21",
+            "Attaque Rush : capture exactement deux dés dont la somme égale sa valeur. Tout dé peut faire une attaque Rush contre deux dés dont l'un est Rush.",
         ),
         DieSkill::Shadow => (
             "Shadow",
             "R 6.10",
             "Pas d'attaque Power. Capture un dé de valeur supérieure ou égale à la sienne, sans dépasser sa taille.",
         ),
+        DieSkill::Slow => ("Slow", "R 6.16", "Ne compte pas pour l'initiative."),
         DieSkill::Speed => (
             "Speed",
             "R 6.9",
@@ -174,6 +221,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "Stinger",
             "R 6.13",
             "En attaque Skill, compte pour toute valeur de son minimum à sa valeur actuelle. Ignoré pour l'initiative.",
+        ),
+        DieSkill::TimeAndSpace => (
+            "TimeAndSpace",
+            "R 6.19",
+            "S'il attaque et se relance sur une valeur impaire, son propriétaire rejoue.",
         ),
         DieSkill::Trip => (
             "Trip",
@@ -208,7 +260,7 @@ mod tests {
         letters.sort();
         letters.dedup();
         assert_eq!(letters.len(), DieSkill::ALL.len());
-        assert_eq!(DieSkill::from_letter('o'), None); // Ornery : hors v1
+        assert_eq!(DieSkill::from_letter('D'), None); // Doppelganger : hors jalon 4
     }
 
     #[test]

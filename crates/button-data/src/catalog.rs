@@ -224,7 +224,7 @@ mod tests {
     #[test]
     fn every_original_button_is_playable_and_unique() {
         let originals = original_buttons();
-        assert_eq!(originals.len(), 20);
+        assert_eq!(originals.len(), 27);
         let entries = catalog(&originals);
         for entry in &entries {
             assert_eq!(
@@ -239,11 +239,11 @@ mod tests {
         let mut names: Vec<_> = originals.iter().map(|b| b.name.clone()).collect();
         names.sort();
         names.dedup();
-        assert_eq!(names.len(), 20);
+        assert_eq!(names.len(), 27);
     }
 
     #[test]
-    fn originals_cover_every_v1_skill() {
+    fn originals_cover_every_skill() {
         use buttonmen_engine::DieSkill;
         let originals = original_buttons();
         for skill in DieSkill::ALL {
@@ -311,7 +311,7 @@ mod tests {
             [
                 ("Soldiers", SetCategory::Official, 1, 2),
                 ("Uptown", SetCategory::Official, 1, 1),
-                (ORIGINAL_SET, SetCategory::Original, 20, 20),
+                (ORIGINAL_SET, SetCategory::Original, 27, 27),
                 ("Fanatic", SetCategory::Fanatics, 1, 1),
             ]
         );
@@ -324,6 +324,33 @@ mod tests {
         assert_eq!(recipes[0].category, SetCategory::Other);
         let editions = build_catalog(&recipes).editions;
         assert_eq!(editions[0].category, SetCategory::Other);
+    }
+
+    #[test]
+    fn local_import_has_no_family_a_blocker() {
+        // Milestone 4A: no official button is unplayable because of a family A letter.
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../data/buttonweavers/buttons.json"
+        );
+        let Ok(json) = std::fs::read_to_string(path) else {
+            return;
+        };
+        let entries = catalog(&parse_buttonweavers_json(&json).unwrap());
+        for e in entries
+            .iter()
+            .filter(|e| e.category == SetCategory::Official)
+        {
+            if let Playability::Unplayable { reason } = &e.playability {
+                for letter in ['w', 'H', 'o', '^', 'G', '#', 'b'] {
+                    assert!(
+                        !reason.contains(&format!("« {letter} »")),
+                        "{} : {reason}",
+                        e.name
+                    );
+                }
+            }
+        }
     }
 
     #[test]

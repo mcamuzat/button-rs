@@ -5,6 +5,13 @@ use crate::die::Sides;
 use crate::ids::{DieId, PlayerId};
 use crate::state::MatchResult;
 
+/// Why a die changed size during a round.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub enum ResizeCause {
+    Mighty,
+}
+
 /// What happened during one `apply`, in order. Used for animations and the action log.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -69,7 +76,30 @@ pub enum GameEvent {
         die: DieId,
         sides: Sides,
     },
+    /// R 6.17 (and milestone 4B): a die took a new size before rolling.
+    DieResized {
+        die: DieId,
+        from: Sides,
+        to: Sides,
+        cause: ResizeCause,
+    },
     Passed {
+        player: PlayerId,
+    },
+    /// R 6.20: `player`'s captured Rage die left a clone.
+    RageReplaced {
+        player: PlayerId,
+        captured: DieId,
+        replacement: DieId,
+    },
+    /// R 6.22: the Boom die left play and the target was rerolled.
+    BoomRerolled {
+        boom: DieId,
+        target: DieId,
+        value: u8,
+    },
+    /// R 6.19: `player` attacks again.
+    ExtraTurn {
         player: PlayerId,
     },
     /// Scores in half-points.

@@ -66,6 +66,8 @@ pub struct PlayerState {
     pub active: Vec<Die>,
     /// Dice captured from the opponent this round.
     pub captured: Vec<CapturedDie>,
+    /// R 6.22: Boom dice that left play this round; they score for nobody.
+    pub out_of_play: Vec<Die>,
     pub record: Record,
 }
 
@@ -144,6 +146,19 @@ impl GameState {
 
     pub fn player_mut(&mut self, p: PlayerId) -> &mut PlayerState {
         &mut self.players[p.index()]
+    }
+
+    /// An id no die of this match uses yet (R 6.20: Rage clones). Ids of slots are never
+    /// reused, so a clone never collides with a die of the recipe.
+    pub fn fresh_die_id(&self) -> DieId {
+        let used = self.players.iter().flat_map(|p| {
+            p.slots
+                .iter()
+                .map(|s| s.id)
+                .chain(p.active.iter().map(|d| d.id))
+                .chain(p.captured.iter().map(|c| c.die.id))
+        });
+        DieId(used.map(|d| d.0 + 1).max().unwrap_or(0))
     }
 
     /// The players who must act now (both during a simultaneous SpecifyDice).

@@ -91,6 +91,7 @@ pub fn attack_state(one: Vec<Placed>, two: Vec<Placed>, to_move: PlayerId) -> Ga
             })
             .collect();
         ps.captured.clear();
+        ps.out_of_play.clear();
     }
     state.initiative = Some(to_move);
     state.consecutive_passes = 0;

@@ -10,6 +10,12 @@ if [ -z "$SRC" ]; then
   git clone --depth 1 https://github.com/buttonmen-dev/buttonmen.git "$SRC"
 fi
 python3 -I scripts/import_buttonweavers.py "$SRC/deploy/database/data.button.sql" data/buttonweavers/buttons.json
+# Taux de victoire des parties humaines (Button Men Online), pour le banc d'équilibrage.
+# Facultatif : le jeu et le banc fonctionnent sans.
+curl -fsSL http://buttonmen.s3-website-us-east-1.amazonaws.com/buttonstats.json \
+  -o data/buttonweavers/stats.json \
+  && echo "stats humaines écrites dans data/buttonweavers/stats.json" \
+  || echo "stats humaines indisponibles (le banc s'en passe)"
 # Le client le charge depuis public/ (gitignoré aussi).
 mkdir -p client/public/buttonweavers
 cp data/buttonweavers/buttons.json client/public/buttonweavers/buttons.json

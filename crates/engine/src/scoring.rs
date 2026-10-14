@@ -1,3 +1,4 @@
+use crate::action::{AttackKind, DeclaredAttack};
 use crate::die::Die;
 use crate::hooks::capture_scoring;
 use crate::ids::PlayerId;
@@ -31,6 +32,13 @@ pub(crate) fn die_points(die: &Die, holding: Holding) -> i32 {
             | DieSkill::Speed
             | DieSkill::Stealth
             | DieSkill::Stinger
+            | DieSkill::Mighty
+            | DieSkill::Slow
+            | DieSkill::Ornery
+            | DieSkill::TimeAndSpace
+            | DieSkill::Rage
+            | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Trip => {}
         }
     }
@@ -60,12 +68,47 @@ pub(crate) fn die_points(die: &Die, holding: Holding) -> i32 {
     }
 }
 
-/// R 5.1 + R 6.6 + R 6.7 + R 6.15: how many half-points capturing `target` with
+/// R 5.1 + R 6.6 + R 6.7 + R 6.15 + R 6.20: how many half-points capturing `target` with
 /// `attackers` swings towards the capturer: the points it gains, plus the kept points
 /// the target's owner loses.
 pub fn capture_swing(attackers: &[&Die], target: &Die) -> i32 {
     let scoring = capture_scoring(attackers, target);
-    die_points(target, Holding::Captured(scoring)) + die_points(target, Holding::Kept)
+    // R 6.20: a Rage target leaves its owner a clone worth the same kept points.
+    let kept_lost = if crate::hooks::leaves_a_clone(target) {
+        0
+    } else {
+        die_points(target, Holding::Kept)
+    };
+    die_points(target, Holding::Captured(scoring)) + kept_lost
+}
+
+/// Half-points `attack` swings towards `player` if it succeeds, before any reroll: the
+/// captured dice (R 5.1, R 6.20), or the Boom die leaving `player`'s kept dice (R 6.22).
+/// A Trip counts as if it captured; callers weigh its chance.
+pub fn attack_swing(state: &GameState, player: PlayerId, attack: &DeclaredAttack) -> i32 {
+    let attackers: Vec<&Die> = attack
+        .attackers
+        .iter()
+        .filter_map(|&id| state.player(player).die(id))
+        .collect();
+    match attack.kind {
+        AttackKind::Boom => -attackers
+            .iter()
+            .map(|d| die_points(d, Holding::Kept))
+            .sum::<i32>(),
+        AttackKind::Power
+        | AttackKind::Skill
+        | AttackKind::Shadow
+        | AttackKind::Speed
+        | AttackKind::Trip
+        | AttackKind::Berserk
+        | AttackKind::Rush => attack
+            .targets
+            .iter()
+            .filter_map(|&id| state.player(player.other()).die(id))
+            .map(|target| capture_swing(&attackers, target))
+            .sum(),
+    }
 }
 
 /// R 5.1: a player's current round score, in half-points.

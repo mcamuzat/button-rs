@@ -1,7 +1,7 @@
 use crate::action::{AttackKind, DeclaredAttack};
 use crate::attack::check_attack;
 use crate::error::RuleError;
-use crate::event::GameEvent;
+use crate::event::{GameEvent, ResizeCause};
 use crate::hooks;
 use crate::ids::{DieId, PlayerId};
 use crate::round;
@@ -28,18 +28,19 @@ pub(crate) fn declare_attack(
         }
         return Err(RuleError::IllegalAttack { reason });
     }
-    resolve_attack(state, player, attack, events);
-    round::end_turn(state, player, events);
+    let again = resolve_attack(state, player, attack, events);
+    round::end_turn(state, player, again, events);
     Ok(())
 }
 
-/// R 4.4 + R 6.1 + R 6.14: carries out an attack already known to be legal.
+/// R 4.4 + R 6.1 + R 6.14 + R 6.18 + R 6.19: carries out an attack already known to be
+/// legal. Returns whether the attacker plays again (R 6.19).
 pub(crate) fn resolve_attack(
     state: &mut GameState,
     player: PlayerId,
     attack: DeclaredAttack,
     events: &mut Vec<GameEvent>,
-) {
+) -> bool {
     events.push(GameEvent::Attacked {
         player,
         attack: attack.clone(),
@@ -53,11 +54,19 @@ pub(crate) fn resolve_attack(
             attack.targets[0],
             events,
         ),
+        AttackKind::Boom => resolve_boom(
+            state,
+            player,
+            attack.attackers[0],
+            attack.targets[0],
+            events,
+        ),
         AttackKind::Power
         | AttackKind::Skill
         | AttackKind::Shadow
         | AttackKind::Speed
-        | AttackKind::Berserk => {
+        | AttackKind::Berserk
+        | AttackKind::Rush => {
             for &target in &attack.targets {
                 capture(state, player, target, &attack.attackers, events);
             }
@@ -69,6 +78,31 @@ pub(crate) fn resolve_attack(
             }
         }
     }
+    // R 6.20: a Rage die that took part in the attack loses Rage.
+    for &a in &attack.attackers {
+        if let Some(die) = state.player_mut(player).die_mut(a) {
+            die.skills.remove(DieSkill::Rage);
+        }
+    }
+    // R 6.19: one extra turn at most, when a rerolled TimeAndSpace attacker shows odd.
+    let plays_again = attack.attackers.iter().any(|&a| {
+        state
+            .player(player)
+            .die(a)
+            .is_some_and(hooks::grants_extra_turn)
+    });
+    // R 6.18: the owner's other Ornery dice reroll after the attack.
+    let ornery: Vec<DieId> = state
+        .player(player)
+        .active
+        .iter()
+        .filter(|d| !attack.attackers.contains(&d.id) && hooks::rerolls_after_any_attack(d))
+        .map(|d| d.id)
+        .collect();
+    for id in ornery {
+        reroll(state, player, id, events);
+    }
+    plays_again
 }
 
 /// R 4.4: the target joins the attacker's score pile.
@@ -95,6 +129,20 @@ fn capture(
         .position(|d| d.id == target)
         .expect("legal target");
     let die = state.player_mut(defender).active.remove(index);
+    // R 6.20: a captured Rage die leaves a clone without Rage, rolled, in its place.
+    if hooks::leaves_a_clone(&die) {
+        let mut clone = die.clone();
+        clone.id = state.fresh_die_id();
+        clone.skills.remove(DieSkill::Rage);
+        clone.dizzy = false;
+        clone.value = clone.sides.roll(&mut state.rng);
+        events.push(GameEvent::RageReplaced {
+            player: defender,
+            captured: target,
+            replacement: clone.id,
+        });
+        state.player_mut(defender).active.insert(index, clone);
+    }
     state
         .player_mut(player)
         .captured
@@ -108,7 +156,14 @@ fn capture(
 fn reroll(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<GameEvent>) {
     let GameState { players, rng, .. } = state;
     if let Some(die) = players[owner.index()].die_mut(id) {
-        hooks::reroll(die, rng);
+        if let Some(from) = hooks::reroll(die, rng) {
+            events.push(GameEvent::DieResized {
+                die: id,
+                from,
+                to: die.sides,
+                cause: ResizeCause::Mighty,
+            });
+        }
         events.push(GameEvent::DieRerolled {
             die: id,
             value: die.value,
@@ -124,6 +179,35 @@ fn shrink(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<Ga
     events.push(GameEvent::DieShrunk {
         die: id,
         sides: die.sides,
+    });
+}
+
+/// R 6.22: the Boom die leaves play (scoring for nobody) and the target is rerolled.
+fn resolve_boom(
+    state: &mut GameState,
+    player: PlayerId,
+    boom: DieId,
+    target: DieId,
+    events: &mut Vec<GameEvent>,
+) {
+    let index = state
+        .player(player)
+        .active
+        .iter()
+        .position(|d| d.id == boom)
+        .expect("legal attacker");
+    let die = state.player_mut(player).active.remove(index);
+    state.player_mut(player).out_of_play.push(die);
+    reroll(state, player.other(), target, events);
+    let value = state
+        .player(player.other())
+        .die(target)
+        .expect("legal target")
+        .value;
+    events.push(GameEvent::BoomRerolled {
+        boom,
+        target,
+        value,
     });
 }
 

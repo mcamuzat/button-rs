@@ -67,15 +67,49 @@ fn pool() -> Vec<Vec<DieSpec>> {
             fixed(8).with(Trip),
             fixed(20).with(Konstant),
         ],
+        // Milestone 4A: every family A skill, and its documented interactions.
+        vec![
+            fixed(4).with(Slow),
+            fixed(6).with(Rage),
+            fixed(8).with(Ornery),
+            fixed(10).with(Mighty),
+            swing(SwingLetter::X).with(TimeAndSpace),
+        ],
+        vec![
+            fixed(6).with(Rush),
+            fixed(8).with(Rush),
+            fixed(10).with(Boom),
+            fixed(12),
+            fixed(4).with(Boom),
+        ],
+        vec![
+            fixed(6).with(Konstant).with(Ornery),
+            fixed(6).with(Berserk).with(Mighty),
+            fixed(4).with(Trip).with(Mighty),
+            fixed(8).with(Rage).with(Speed),
+            fixed(10).with(Konstant).with(TimeAndSpace),
+        ],
     ]
 }
 
+/// Dice of the recipes that are in play this round: active, captured or boomed (R 6.22).
+/// Rage clones (R 6.20) carry ids that no slot has, and are left out.
 fn total_dice(state: &GameState) -> usize {
+    let is_slot = |d: &buttonmen_engine::Die| {
+        PlayerId::ALL
+            .iter()
+            .any(|&p| state.player(p).slot(d.id).is_some())
+    };
     PlayerId::ALL
         .iter()
         .map(|&p| {
             let ps = state.player(p);
-            ps.active.len() + ps.captured.len()
+            ps.active
+                .iter()
+                .chain(ps.captured.iter().map(|c| &c.die))
+                .chain(&ps.out_of_play)
+                .filter(|d| is_slot(d))
+                .count()
         })
         .sum()
 }
@@ -179,12 +213,12 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
 
     #[test]
-    fn random_matches_end_and_keep_invariants(a in 0usize..7, b in 0usize..7, seed in any::<u64>()) {
+    fn random_matches_end_and_keep_invariants(a in 0usize..10, b in 0usize..10, seed in any::<u64>()) {
         play(a, b, seed)?;
     }
 
     #[test]
-    fn surrender_is_always_accepted(a in 0usize..7, b in 0usize..7, seed in any::<u64>()) {
+    fn surrender_is_always_accepted(a in 0usize..10, b in 0usize..10, seed in any::<u64>()) {
         let pool = pool();
         let state = new_game([button("A", pool[a].clone()), button("B", pool[b].clone())], seed, MatchConfig::default());
         prop_assert!(apply(&state, PlayerId::Two, Action::Surrender).is_ok());

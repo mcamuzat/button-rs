@@ -27,14 +27,14 @@ pub use apply::apply;
 pub use attack::check_attack;
 pub use die::{Die, DieShape, DieSpec, Sides, SwingLetter, TwinPart};
 pub use error::{AttackError, FireError, ReactionError, RuleError};
-pub use event::GameEvent;
+pub use event::{GameEvent, ResizeCause};
 pub use ids::{DieId, PlayerId};
 pub use legal::{
     AttackOption, FireCapacity, FocusRange, LegalActions, OptionRequest, SwingRequest,
     candidate_actions, legal_actions,
 };
 pub use rng::SeededRng;
-pub use scoring::{capture_swing, round_score};
+pub use scoring::{attack_swing, capture_swing, round_score};
 pub use setup::new_game;
 pub use skill::{DieSkill, SkillInfo, SkillSet, skill_info};
 pub use state::{

@@ -191,8 +191,8 @@ pub(crate) fn fire_turn_down(
         fire,
         boosts,
     });
-    resolve::resolve_attack(state, player, attack, events);
-    round::end_turn(state, player, events);
+    let again = resolve::resolve_attack(state, player, attack, events);
+    round::end_turn(state, player, again, events);
     Ok(())
 }
 

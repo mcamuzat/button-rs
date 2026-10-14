@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn malformed_input_is_an_error_not_a_panic() {
         assert!(new_match("{}").is_err());
-        assert!(new_match(&SETUP.replace("(8) (X)", "o(8)")).is_err());
+        assert!(new_match(&SETUP.replace("(8) (X)", "D(8)")).is_err());
         let mut state = new_match(SETUP).unwrap();
         assert!(apply(&mut state, r#""Three""#, r#"{"type":"Pass"}"#).is_err());
         assert!(view(&state, "nope").is_err());
@@ -166,10 +166,13 @@ mod tests {
     #[test]
     fn catalog_and_skills_serialize() {
         let catalog: serde_json::Value = serde_json::from_str(&catalog(None).unwrap()).unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 20);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 27);
         assert_eq!(catalog["editions"][0]["category"], "Original");
         let skills: serde_json::Value = serde_json::from_str(&skills()).unwrap();
-        assert_eq!(skills.as_array().unwrap().len(), 15);
+        assert_eq!(
+            skills.as_array().unwrap().len(),
+            buttonmen_engine::DieSkill::ALL.len()
+        );
     }
 
     #[test]

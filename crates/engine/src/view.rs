@@ -87,18 +87,27 @@ pub struct GameView {
     pub legal: LegalActions,
 }
 
-fn notation_of(state: &GameState, id: DieId) -> String {
+/// Notation of a die that has no slot of its own (R 6.20: Rage clone), from its skills and sides.
+fn die_notation(die: &Die) -> String {
+    let skills: String = die.skills.iter().map(|s| s.letter()).collect();
+    let core = match die.sides {
+        Sides::Single(n) => n.to_string(),
+        Sides::Twin(a, b) => format!("{a},{b}"),
+    };
+    format!("{skills}({core})")
+}
+
+fn notation_of(state: &GameState, die: &Die) -> String {
     PlayerId::ALL
         .iter()
-        .find_map(|&p| state.player(p).slot(id))
-        .map(|s| s.spec.notation())
-        .unwrap_or_default()
+        .find_map(|&p| state.player(p).slot(die.id))
+        .map_or_else(|| die_notation(die), |s| s.spec.notation())
 }
 
 fn die_view(state: &GameState, die: &Die) -> DieView {
     DieView {
         id: die.id,
-        notation: notation_of(state, die.id),
+        notation: notation_of(state, die),
         skills: die.skills.iter().collect(),
         sides: die.sides,
         min: die.min(),

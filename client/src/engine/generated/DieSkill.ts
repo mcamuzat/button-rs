@@ -3,4 +3,4 @@
 /**
  * Die skills supported in v1 (R 6). The order is the display order of notations.
  */
-export type DieSkill = "Berserk" | "Chance" | "Fire" | "Focus" | "Konstant" | "Null" | "Poison" | "Queer" | "Reserve" | "Shadow" | "Speed" | "Stealth" | "Stinger" | "Trip" | "Value";
+export type DieSkill = "Berserk" | "Boom" | "Chance" | "Fire" | "Focus" | "Konstant" | "Mighty" | "Null" | "Ornery" | "Poison" | "Queer" | "Rage" | "Reserve" | "Rush" | "Shadow" | "Slow" | "Speed" | "Stealth" | "Stinger" | "TimeAndSpace" | "Trip" | "Value";
