@@ -92,6 +92,12 @@ pub enum GameEvent {
         captured: DieId,
         replacement: DieId,
     },
+    /// R 6.22: the Boom die left play and the target was rerolled.
+    BoomRerolled {
+        boom: DieId,
+        target: DieId,
+        value: u8,
+    },
     /// R 6.19: `player` attacks again.
     ExtraTurn {
         player: PlayerId,

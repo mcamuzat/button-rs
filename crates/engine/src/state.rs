@@ -66,6 +66,8 @@ pub struct PlayerState {
     pub active: Vec<Die>,
     /// Dice captured from the opponent this round.
     pub captured: Vec<CapturedDie>,
+    /// R 6.22: Boom dice that left play this round; they score for nobody.
+    pub out_of_play: Vec<Die>,
     pub record: Record,
 }
 

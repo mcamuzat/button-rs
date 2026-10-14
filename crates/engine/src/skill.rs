@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub enum DieSkill {
     Berserk,
+    Boom,
     Chance,
     Fire,
     Focus,
@@ -30,8 +31,9 @@ pub enum DieSkill {
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 21] = [
+    pub const ALL: [DieSkill; 22] = [
         DieSkill::Berserk,
+        DieSkill::Boom,
         DieSkill::Chance,
         DieSkill::Fire,
         DieSkill::Focus,
@@ -58,6 +60,7 @@ impl DieSkill {
     pub fn letter(self) -> char {
         match self {
             DieSkill::Berserk => 'B',
+            DieSkill::Boom => 'b',
             DieSkill::Chance => 'c',
             DieSkill::Fire => 'F',
             DieSkill::Focus => 'f',
@@ -132,6 +135,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "Berserk",
             "R 6.1",
             "Pas d'attaque Skill. Attaque Berserk : capture des dés dont la somme égale sa valeur, puis perd Berserk et passe à la moitié de ses faces.",
+        ),
+        DieSkill::Boom => (
+            "Boom",
+            "R 6.22",
+            "Attaque Boom : le dé sort du jeu (il ne compte pour personne) et fait relancer un dé adverse, sans le capturer.",
         ),
         DieSkill::Chance => (
             "Chance",

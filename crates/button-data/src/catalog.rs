@@ -247,7 +247,8 @@ mod tests {
         use buttonmen_engine::DieSkill;
         // Milestone 4A: skills whose original button comes with the closing task (plan 4A,
         // task 9), which empties this list.
-        const AWAITING_ORIGINALS: [DieSkill; 6] = [
+        const AWAITING_ORIGINALS: [DieSkill; 7] = [
+            DieSkill::Boom,
             DieSkill::Mighty,
             DieSkill::Ornery,
             DieSkill::Rage,

@@ -32,6 +32,7 @@ pub fn new_game(buttons: [Button; 2], seed: u64, config: MatchConfig) -> GameSta
             pending_choice: None,
             active: Vec::new(),
             captured: Vec::new(),
+            out_of_play: Vec::new(),
             record: Record::default(),
         }
     });
@@ -257,6 +258,7 @@ pub(crate) fn start_round(state: &mut GameState, events: &mut Vec<GameEvent>) {
         let player = state.player_mut(p);
         player.active = dice;
         player.captured.clear();
+        player.out_of_play.clear();
     }
     initiative::determine(state, events);
 }

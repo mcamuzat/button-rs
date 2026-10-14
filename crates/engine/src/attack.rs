@@ -55,7 +55,9 @@ fn gather<'a>(
 fn check_counts(kind: AttackKind, p: &Participants) -> Result<(), AttackError> {
     let (a, t) = (p.attackers.len(), p.targets.len());
     let ok = match kind {
-        AttackKind::Power | AttackKind::Shadow | AttackKind::Trip => a == 1 && t == 1,
+        AttackKind::Power | AttackKind::Shadow | AttackKind::Trip | AttackKind::Boom => {
+            a == 1 && t == 1
+        }
         AttackKind::Skill => a >= 1 && t == 1,
         AttackKind::Speed | AttackKind::Berserk => a == 1 && t >= 1,
         // R 6.21.
@@ -144,6 +146,8 @@ fn values_allow(kind: AttackKind, p: &Participants) -> bool {
         }
         // R 4.3.
         AttackKind::Skill => skill_sums(&p.attackers).contains(&i32::from(first_target.value)),
+        // R 6.22: any target.
+        AttackKind::Boom => true,
     }
 }
 
@@ -189,7 +193,12 @@ pub(crate) fn attack_shapes(state: &GameState, player: PlayerId) -> Vec<Declared
     for a in &mine {
         let kinds = hooks::attack_kinds(a);
         for t in &theirs {
-            for kind in [AttackKind::Power, AttackKind::Shadow, AttackKind::Trip] {
+            for kind in [
+                AttackKind::Power,
+                AttackKind::Shadow,
+                AttackKind::Trip,
+                AttackKind::Boom,
+            ] {
                 if kinds.contains(&kind) {
                     candidates.push(DeclaredAttack {
                         kind,

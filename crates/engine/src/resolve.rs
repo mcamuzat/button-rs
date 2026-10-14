@@ -54,6 +54,13 @@ pub(crate) fn resolve_attack(
             attack.targets[0],
             events,
         ),
+        AttackKind::Boom => resolve_boom(
+            state,
+            player,
+            attack.attackers[0],
+            attack.targets[0],
+            events,
+        ),
         AttackKind::Power
         | AttackKind::Skill
         | AttackKind::Shadow
@@ -178,6 +185,41 @@ fn shrink(state: &mut GameState, owner: PlayerId, id: DieId, events: &mut Vec<Ga
     events.push(GameEvent::DieShrunk {
         die: id,
         sides: die.sides,
+    });
+}
+
+/// R 6.22: the Boom die leaves play (scoring for nobody) and the target is rerolled.
+fn resolve_boom(
+    state: &mut GameState,
+    player: PlayerId,
+    boom: DieId,
+    target: DieId,
+    events: &mut Vec<GameEvent>,
+) {
+    let index = state
+        .player(player)
+        .active
+        .iter()
+        .position(|d| d.id == boom)
+        .expect("legal attacker");
+    let die = state.player_mut(player).active.remove(index);
+    state.player_mut(player).out_of_play.push(die);
+    reroll(
+        state,
+        player.other(),
+        target,
+        hooks::RerollCause::Normal,
+        events,
+    );
+    let value = state
+        .player(player.other())
+        .die(target)
+        .expect("legal target")
+        .value;
+    events.push(GameEvent::BoomRerolled {
+        boom,
+        target,
+        value,
     });
 }
 

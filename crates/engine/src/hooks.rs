@@ -30,6 +30,7 @@ pub(crate) fn counts_for_initiative(die: &Die) -> bool {
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
@@ -58,6 +59,7 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
@@ -93,6 +95,7 @@ fn grows_on_reroll(die: &Die) -> bool {
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
@@ -134,6 +137,7 @@ pub(crate) fn rerolls_after_any_attack(die: &Die) -> bool {
         | DieSkill::Trip
         | DieSkill::Rage
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
@@ -163,6 +167,7 @@ pub(crate) fn grants_extra_turn(die: &Die) -> bool {
             | DieSkill::Trip
             | DieSkill::Rage
             | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Value => false,
         })
 }
@@ -190,6 +195,7 @@ pub(crate) fn leaves_a_clone(die: &Die) -> bool {
         | DieSkill::TimeAndSpace
         | DieSkill::Trip
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
@@ -217,6 +223,7 @@ pub(crate) fn enables_rush(die: &Die) -> bool {
         | DieSkill::Stinger
         | DieSkill::TimeAndSpace
         | DieSkill::Trip
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
@@ -249,6 +256,10 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             // R 6.1.
             DieSkill::Berserk => {
                 kinds.insert(AttackKind::Berserk);
+            }
+            // R 6.22.
+            DieSkill::Boom => {
+                kinds.insert(AttackKind::Boom);
             }
             DieSkill::Queer
             | DieSkill::Chance
@@ -303,6 +314,7 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
             | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Value => {}
         }
     }
@@ -331,14 +343,18 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => false,
     })
 }
 
-/// R 6.12: can `target` be captured by a `kind` attack made by `attackers` dice?
+/// R 6.12 + R 6.22: may `target` be the target of a `kind` attack made by `attackers` dice?
 pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) -> bool {
     target.skills.iter().all(|skill| match skill {
-        DieSkill::Stealth => kind == AttackKind::Skill && attackers >= 2,
+        // R 6.12 + R 6.22: Boom only rerolls its target, and may aim at a Stealth die.
+        DieSkill::Stealth => {
+            (kind == AttackKind::Skill && attackers >= 2) || kind == AttackKind::Boom
+        }
         DieSkill::Berserk
         | DieSkill::Chance
         | DieSkill::Fire
@@ -358,6 +374,7 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
         | DieSkill::Rush
+        | DieSkill::Boom
         | DieSkill::Value => true,
     })
 }
@@ -388,6 +405,7 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
             | DieSkill::Rush
+            | DieSkill::Boom
             | DieSkill::Value => {}
         }
     }
@@ -427,6 +445,7 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::TimeAndSpace
                 | DieSkill::Rage
                 | DieSkill::Rush
+                | DieSkill::Boom
                 | DieSkill::Trip => {}
             }
         }

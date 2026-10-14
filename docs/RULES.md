@@ -27,7 +27,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 
 ## R 4 — Tour de jeu
 
-- **R 4.1** À son tour, un joueur doit attaquer s'il le peut. Il ne passe que s'il n'a aucune attaque possible (y compris avec l'aide de Fire, R 6.3).
+- **R 4.1** À son tour, un joueur doit attaquer s'il le peut. Il ne passe que s'il n'a aucune attaque possible (y compris avec l'aide de Fire, R 6.3, ou une attaque Boom, R 6.22).
 - **R 4.2 Power.** Un dé capture un dé adverse dont la valeur est inférieure ou égale à la sienne.
 - **R 4.3 Skill.** Un ou plusieurs dés capturent un dé adverse dont la valeur est exactement la somme des leurs.
 - **R 4.4 Après l'attaque.** Les dés capturés passent dans la pile de score de l'attaquant ; les dés attaquants sont relancés.
@@ -61,6 +61,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.19 TimeAndSpace (^).** Si un dé TimeAndSpace participe à une attaque et se relance sur une valeur impaire, son propriétaire joue un tour de plus ; un seul tour de plus par attaque. La manche s'arrête quand même si un joueur n'a plus de dés. (Source : `BMSkillTimeAndSpace.php`.)
 - **R 6.20 Rage (G).** Ne compte pas pour l'initiative. Quand un dé Rage est capturé, son propriétaire reçoit à sa place un clone (même taille, mêmes compétences sauf Rage), qui est lancé ; le clone disparaît à la fin de la manche comme tout dé hors recette. Un dé Rage qui participe à une attaque perd Rage. Une attaque Trip ratée ne capture pas et ne crée pas de clone. (Source : `BMSkillRage.php`, `BMAttack::commit_attack`.)
 - **R 6.21 Rush (#).** Attaque Rush : un seul dé capture exactement deux dés adverses dont la somme des valeurs égale la sienne. L'attaque est permise si l'attaquant ou au moins une des deux cibles est Rush : n'importe quel dé peut donc attaquer en Rush deux dés dont un est Rush. Un dé Stealth ne fait pas d'attaque Rush et ne peut pas en être la cible. (Source : `BMAttackRush.php`, `BMAttackSpeed::are_skills_compatible`, `BMAttack::possible_attack_types`.)
+- **R 6.22 Boom (b).** Attaque Boom : un dé Boom vise un dé adverse ; le dé Boom sort du jeu jusqu'à la fin de la manche et ne compte pour aucun des deux joueurs ; la cible est relancée, jamais capturée. Une attaque Boom possible interdit de passer (R 4.1). Un dé Stealth ne fait pas d'attaque Boom mais peut en être la cible. (Source : `BMSkillBoom.php`, `BMAttackBoom.php`.)
 
 ## R 7 — Interactions retenues
 

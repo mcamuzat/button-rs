@@ -4,7 +4,8 @@ use PlayerId::{One, Two};
 use buttonmen_engine::testing::{attack_state, die, id, opening_state};
 use buttonmen_engine::{
     Action, AttackError, AttackKind, DeclaredAttack, DieSkill, GameEvent, GameState, PlayerId,
-    ResizeCause, SeededRng, Sides, Viewer, WaitingFor, capture_swing, check_attack, view_for,
+    ResizeCause, RuleError, SeededRng, Sides, Viewer, WaitingFor, attack_swing, capture_swing,
+    check_attack, view_for,
 };
 use common::ok;
 
@@ -461,4 +462,99 @@ fn a_rush_attack_captures_both_dice_and_is_listed() {
     let (after, _) = ok(&s, One, attack(&s, AttackKind::Rush, &[0], &[0, 1]));
     assert_eq!(after.player(One).captured.len(), 2);
     assert_eq!(after.player(Two).active.len(), 1);
+}
+
+#[test]
+fn a_boom_die_leaves_play_and_rerolls_its_target() {
+    // R 6.22.
+    let s = attack_state(
+        vec![die(6, 2).with(DieSkill::Boom), die(10, 1)],
+        vec![die(20, 20), die(4, 4)],
+        One,
+    );
+    let (after, events) = ok(&s, One, attack(&s, AttackKind::Boom, &[0], &[0]));
+    let one = after.player(One);
+    assert_eq!(one.active.len(), 1);
+    assert_eq!(one.out_of_play.len(), 1);
+    assert!(one.captured.is_empty());
+    assert_eq!(after.player(Two).active.len(), 2);
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, GameEvent::BoomRerolled { .. }))
+    );
+    assert_eq!(after.waiting_for, WaitingFor::Attack { player: Two });
+}
+
+#[test]
+fn a_boomed_die_scores_for_nobody() {
+    let s = attack_state(
+        vec![die(20, 2).with(DieSkill::Boom), die(10, 1)],
+        vec![die(20, 20), die(4, 4)],
+        One,
+    );
+    let before = buttonmen_engine::round_score(&s, One);
+    let (after, _) = ok(&s, One, attack(&s, AttackKind::Boom, &[0], &[0]));
+    assert_eq!(buttonmen_engine::round_score(&after, One), before - 20);
+}
+
+#[test]
+fn boom_may_target_stealth_but_stealth_cannot_boom() {
+    let s = attack_state(
+        vec![die(6, 2).with(DieSkill::Boom)],
+        vec![die(6, 3).with(DieSkill::Stealth)],
+        One,
+    );
+    assert_eq!(check(&s, AttackKind::Boom, &[0], &[0]), Ok(()));
+    let stealthy = attack_state(
+        vec![die(6, 2).with(DieSkill::Boom).with(DieSkill::Stealth)],
+        vec![die(6, 3)],
+        One,
+    );
+    assert!(matches!(
+        check(&stealthy, AttackKind::Boom, &[0], &[0]),
+        Err(AttackError::KindUnavailable { .. })
+    ));
+}
+
+#[test]
+fn a_possible_boom_forbids_passing() {
+    // Buttonweavers treats Boom as an obligatory attack: it is not optional like Warrior.
+    let s = attack_state(vec![die(6, 1).with(DieSkill::Boom)], vec![die(6, 6)], One);
+    assert_eq!(
+        buttonmen_engine::apply(&s, One, Action::Pass).unwrap_err(),
+        RuleError::PassNotAllowed
+    );
+}
+
+#[test]
+fn boomed_dice_come_back_next_round() {
+    let s = attack_state(vec![die(6, 1).with(DieSkill::Boom)], vec![die(6, 6)], One);
+    let (after, events) = ok(&s, One, attack(&s, AttackKind::Boom, &[0], &[0]));
+    // One has no die left: the round ends and the next one starts from the recipe.
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, GameEvent::RoundEnded { .. }))
+    );
+    assert!(after.player(One).out_of_play.is_empty());
+}
+
+#[test]
+fn attack_swing_counts_captures_rage_and_boom() {
+    let s = attack_state(
+        vec![die(10, 9), die(8, 2).with(DieSkill::Boom)],
+        vec![die(6, 4), die(8, 4).with(DieSkill::Rage)],
+        One,
+    );
+    let swing = |kind, a: &[usize], t: &[usize]| {
+        let Action::Attack { attack } = attack(&s, kind, a, t) else {
+            unreachable!()
+        };
+        attack_swing(&s, One, &attack)
+    };
+    assert_eq!(swing(AttackKind::Power, &[0], &[0]), 18);
+    assert_eq!(swing(AttackKind::Power, &[0], &[1]), 16);
+    // The Boom die leaves One's kept dice (4 points) and captures nothing.
+    assert_eq!(swing(AttackKind::Boom, &[1], &[0]), -8);
 }
