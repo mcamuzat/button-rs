@@ -22,15 +22,15 @@ recipe = "z(4) (6) z(10) (12) (X)"
 
 [[button]]
 name = "Fenouil"
-recipe = "t(4) (6) (8) (12) (V)"
+recipe = "(4) t(6) (8) (12) (Y)"
 
 [[button]]
 name = "Grêle"
-recipe = "B(8) (10) (12) B(20) (W)"
+recipe = "B(8) (10) (12) B(20) (Z)"
 
 [[button]]
 name = "Houle"
-recipe = "f(4) f(6) (10) (12) (X)"
+recipe = "(4) f(6) (8) (12) (V)"
 
 [[button]]
 name = "Iris"
@@ -38,7 +38,7 @@ recipe = "c(4) (8) c(10) (12) (Y)"
 
 [[button]]
 name = "Jade"
-recipe = "n(6) (8) (10) (12) (X)"
+recipe = "n(4) (12) (12) (20) (Z)"
 
 [[button]]
 name = "Kilim"
@@ -46,7 +46,7 @@ recipe = "k(4) (6) (10) (12) (S)"
 
 [[button]]
 name = "Lierre"
-recipe = "g(4) g(6) (10) (12) (X)"
+recipe = "(4) g(6) (10) (12) (X)"
 
 [[button]]
 name = "Mistral"
@@ -74,7 +74,7 @@ recipe = "(4/8) (6/10) (10) (12) (X)"
 
 [[button]]
 name = "Sable"
-recipe = "(4,4) (8) (10) (X,X)"
+recipe = "(4,4) (8) (10) (12) (X,X)"
 
 [[button]]
 name = "Tonnerre"
