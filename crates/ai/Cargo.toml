@@ -16,3 +16,8 @@ ts-rs = { workspace = true, optional = true }
 [dev-dependencies]
 buttonmen-engine = { workspace = true, features = ["testing"] }
 buttonmen-data = { workspace = true }
+
+[[example]]
+name = "balance"
+# The aggregation helpers are unit-tested with `cargo test -p buttonmen-ai --example balance`.
+test = true
