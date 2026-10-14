@@ -27,7 +27,7 @@ impl SpecChoice {
     }
 }
 
-/// R 4.2, R 4.3, R 6.1, R 6.9, R 6.10, R 6.14.
+/// R 4.2, R 4.3, R 6.1, R 6.9, R 6.10, R 6.14, R 6.21.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub enum AttackKind {
@@ -37,16 +37,18 @@ pub enum AttackKind {
     Speed,
     Trip,
     Berserk,
+    Rush,
 }
 
 impl AttackKind {
-    pub const ALL: [AttackKind; 6] = [
+    pub const ALL: [AttackKind; 7] = [
         AttackKind::Power,
         AttackKind::Skill,
         AttackKind::Shadow,
         AttackKind::Speed,
         AttackKind::Trip,
         AttackKind::Berserk,
+        AttackKind::Rush,
     ];
 }
 

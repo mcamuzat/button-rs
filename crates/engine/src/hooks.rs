@@ -29,6 +29,7 @@ pub(crate) fn counts_for_initiative(die: &Die) -> bool {
         | DieSkill::Mighty
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
+        | DieSkill::Rush
         | DieSkill::Value => true,
     })
 }
@@ -56,6 +57,7 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
+        | DieSkill::Rush
         | DieSkill::Value => true,
     })
 }
@@ -90,6 +92,7 @@ fn grows_on_reroll(die: &Die) -> bool {
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
+        | DieSkill::Rush
         | DieSkill::Value => false,
     })
 }
@@ -130,6 +133,7 @@ pub(crate) fn rerolls_after_any_attack(die: &Die) -> bool {
         | DieSkill::TimeAndSpace
         | DieSkill::Trip
         | DieSkill::Rage
+        | DieSkill::Rush
         | DieSkill::Value => false,
     })
 }
@@ -158,6 +162,7 @@ pub(crate) fn grants_extra_turn(die: &Die) -> bool {
             | DieSkill::Stinger
             | DieSkill::Trip
             | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Value => false,
         })
 }
@@ -184,6 +189,34 @@ pub(crate) fn leaves_a_clone(die: &Die) -> bool {
         | DieSkill::Stinger
         | DieSkill::TimeAndSpace
         | DieSkill::Trip
+        | DieSkill::Rush
+        | DieSkill::Value => false,
+    })
+}
+
+/// R 6.21: does this die make Rush attacks possible (as attacker or as target)?
+pub(crate) fn enables_rush(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Rush => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Ornery
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Rage
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
         | DieSkill::Value => false,
     })
 }
@@ -192,7 +225,9 @@ pub(crate) fn leaves_a_clone(die: &Die) -> bool {
 /// R 6.12, R 6.14). Grants are applied first, then restrictions.
 pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
     let odd = die.value % 2 == 1;
-    let mut kinds = BTreeSet::from([AttackKind::Power, AttackKind::Skill]);
+    // R 6.21: any die may make a Rush attack (it still needs a Rush die among the dice
+    // involved, checked with the targets in `attack::check_skills`).
+    let mut kinds = BTreeSet::from([AttackKind::Power, AttackKind::Skill, AttackKind::Rush]);
     for skill in die.skills.iter() {
         match skill {
             // R 6.10.
@@ -230,6 +265,7 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Value => {}
         }
     }
@@ -266,6 +302,7 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Value => {}
         }
     }
@@ -293,6 +330,7 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
+        | DieSkill::Rush
         | DieSkill::Value => false,
     })
 }
@@ -319,6 +357,7 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
         | DieSkill::Rage
+        | DieSkill::Rush
         | DieSkill::Value => true,
     })
 }
@@ -348,6 +387,7 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Value => {}
         }
     }
@@ -386,6 +426,7 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::Ornery
                 | DieSkill::TimeAndSpace
                 | DieSkill::Rage
+                | DieSkill::Rush
                 | DieSkill::Trip => {}
             }
         }

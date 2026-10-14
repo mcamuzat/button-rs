@@ -58,7 +58,8 @@ pub(crate) fn resolve_attack(
         | AttackKind::Skill
         | AttackKind::Shadow
         | AttackKind::Speed
-        | AttackKind::Berserk => {
+        | AttackKind::Berserk
+        | AttackKind::Rush => {
             for &target in &attack.targets {
                 capture(state, player, target, &attack.attackers, events);
             }

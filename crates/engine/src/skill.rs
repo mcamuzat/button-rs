@@ -18,6 +18,7 @@ pub enum DieSkill {
     Queer,
     Rage,
     Reserve,
+    Rush,
     Shadow,
     Slow,
     Speed,
@@ -29,7 +30,7 @@ pub enum DieSkill {
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 20] = [
+    pub const ALL: [DieSkill; 21] = [
         DieSkill::Berserk,
         DieSkill::Chance,
         DieSkill::Fire,
@@ -42,6 +43,7 @@ impl DieSkill {
         DieSkill::Queer,
         DieSkill::Rage,
         DieSkill::Reserve,
+        DieSkill::Rush,
         DieSkill::Shadow,
         DieSkill::Slow,
         DieSkill::Speed,
@@ -67,6 +69,7 @@ impl DieSkill {
             DieSkill::Queer => 'q',
             DieSkill::Rage => 'G',
             DieSkill::Reserve => 'r',
+            DieSkill::Rush => '#',
             DieSkill::Shadow => 's',
             DieSkill::Slow => 'w',
             DieSkill::Speed => 'z',
@@ -184,6 +187,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "Reserve",
             "R 6.11",
             "Hors jeu au départ ; après une manche perdue, on peut le faire entrer en jeu pour la suite du match.",
+        ),
+        DieSkill::Rush => (
+            "Rush",
+            "R 6.21",
+            "Attaque Rush : capture exactement deux dés dont la somme égale sa valeur. Tout dé peut faire une attaque Rush contre deux dés dont l'un est Rush.",
         ),
         DieSkill::Shadow => (
             "Shadow",

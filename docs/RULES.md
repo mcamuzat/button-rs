@@ -60,6 +60,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.18 Ornery (o).** Se relance après chaque attaque de son propriétaire, qu'il y ait participé ou non (un attaquant Ornery ne se relance qu'une fois). Ne se relance pas quand le joueur passe. (Source : `BMSkillOrnery.php`.)
 - **R 6.19 TimeAndSpace (^).** Si un dé TimeAndSpace participe à une attaque et se relance sur une valeur impaire, son propriétaire joue un tour de plus ; un seul tour de plus par attaque. La manche s'arrête quand même si un joueur n'a plus de dés. (Source : `BMSkillTimeAndSpace.php`.)
 - **R 6.20 Rage (G).** Ne compte pas pour l'initiative. Quand un dé Rage est capturé, son propriétaire reçoit à sa place un clone (même taille, mêmes compétences sauf Rage), qui est lancé ; le clone disparaît à la fin de la manche comme tout dé hors recette. Un dé Rage qui participe à une attaque perd Rage. Une attaque Trip ratée ne capture pas et ne crée pas de clone. (Source : `BMSkillRage.php`, `BMAttack::commit_attack`.)
+- **R 6.21 Rush (#).** Attaque Rush : un seul dé capture exactement deux dés adverses dont la somme des valeurs égale la sienne. L'attaque est permise si l'attaquant ou au moins une des deux cibles est Rush : n'importe quel dé peut donc attaquer en Rush deux dés dont un est Rush. Un dé Stealth ne fait pas d'attaque Rush et ne peut pas en être la cible. (Source : `BMAttackRush.php`, `BMAttackSpeed::are_skills_compatible`, `BMAttack::possible_attack_types`.)
 
 ## R 7 — Interactions retenues
 

@@ -3,8 +3,8 @@ mod common;
 use PlayerId::{One, Two};
 use buttonmen_engine::testing::{attack_state, die, id, opening_state};
 use buttonmen_engine::{
-    Action, AttackKind, DeclaredAttack, DieSkill, GameEvent, GameState, PlayerId, ResizeCause,
-    SeededRng, Sides, Viewer, WaitingFor, capture_swing, view_for,
+    Action, AttackError, AttackKind, DeclaredAttack, DieSkill, GameEvent, GameState, PlayerId,
+    ResizeCause, SeededRng, Sides, Viewer, WaitingFor, capture_swing, check_attack, view_for,
 };
 use common::ok;
 
@@ -368,4 +368,97 @@ fn rage_clone_has_a_notation_in_the_view() {
     let (after, _) = ok(&s, One, attack(&s, AttackKind::Power, &[0], &[0]));
     let view = view_for(&after, Viewer::Spectator);
     assert_eq!(view.players[1].active[0].notation, "p(8)");
+}
+
+fn check(
+    state: &GameState,
+    kind: AttackKind,
+    attackers: &[usize],
+    targets: &[usize],
+) -> Result<(), AttackError> {
+    let Action::Attack { attack } = attack(state, kind, attackers, targets) else {
+        unreachable!()
+    };
+    check_attack(state, One, &attack)
+}
+
+#[test]
+fn a_rush_die_captures_exactly_two_dice_summing_to_its_value() {
+    // R 6.21.
+    let s = attack_state(
+        vec![die(10, 7).with(DieSkill::Rush)],
+        vec![die(6, 3), die(6, 4), die(6, 2)],
+        One,
+    );
+    assert_eq!(check(&s, AttackKind::Rush, &[0], &[0, 1]), Ok(()));
+    assert_eq!(
+        check(&s, AttackKind::Rush, &[0], &[0, 2]),
+        Err(AttackError::ValuesDoNotMatch)
+    );
+    assert_eq!(
+        check(&s, AttackKind::Rush, &[0], &[0]),
+        Err(AttackError::WrongDiceCount)
+    );
+    assert_eq!(
+        check(&s, AttackKind::Rush, &[0], &[0, 1, 2]),
+        Err(AttackError::WrongDiceCount)
+    );
+}
+
+#[test]
+fn any_die_can_rush_two_targets_when_one_of_them_is_rush() {
+    let s = attack_state(
+        vec![die(10, 7)],
+        vec![die(6, 3).with(DieSkill::Rush), die(6, 4), die(6, 3)],
+        One,
+    );
+    assert_eq!(check(&s, AttackKind::Rush, &[0], &[0, 1]), Ok(()));
+    let plain = attack_state(vec![die(10, 7)], vec![die(6, 3), die(6, 4)], One);
+    assert!(matches!(
+        check(&plain, AttackKind::Rush, &[0], &[0, 1]),
+        Err(AttackError::KindUnavailable { .. })
+    ));
+}
+
+#[test]
+fn rush_cannot_capture_stealth() {
+    let s = attack_state(
+        vec![die(10, 7).with(DieSkill::Rush)],
+        vec![
+            die(6, 3).with(DieSkill::Stealth),
+            die(6, 4).with(DieSkill::Rush),
+        ],
+        One,
+    );
+    assert!(matches!(
+        check(&s, AttackKind::Rush, &[0], &[0, 1]),
+        Err(AttackError::TargetProtected { .. })
+    ));
+}
+
+#[test]
+fn stealth_dice_cannot_rush() {
+    let s = attack_state(
+        vec![die(10, 7).with(DieSkill::Stealth).with(DieSkill::Rush)],
+        vec![die(6, 3), die(6, 4)],
+        One,
+    );
+    assert!(matches!(
+        check(&s, AttackKind::Rush, &[0], &[0, 1]),
+        Err(AttackError::KindUnavailable { .. })
+    ));
+}
+
+#[test]
+fn a_rush_attack_captures_both_dice_and_is_listed() {
+    let s = attack_state(
+        vec![die(10, 7).with(DieSkill::Rush)],
+        vec![die(6, 3), die(6, 4), die(20, 20)],
+        One,
+    );
+    let listed = buttonmen_engine::candidate_actions(&s, One);
+    assert!(listed.contains(&attack(&s, AttackKind::Rush, &[0], &[0, 1])));
+    let (after, _) = ok(&s, One, attack(&s, AttackKind::Rush, &[0], &[0, 1]));
+    assert_eq!(after.player(One).captured.len(), 2);
+    assert_eq!(after.player(Two).active.len(), 1);
 }

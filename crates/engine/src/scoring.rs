@@ -36,6 +36,7 @@ pub(crate) fn die_points(die: &Die, holding: Holding) -> i32 {
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
             | DieSkill::Rage
+            | DieSkill::Rush
             | DieSkill::Trip => {}
         }
     }
