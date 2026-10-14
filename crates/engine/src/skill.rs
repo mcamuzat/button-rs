@@ -16,6 +16,7 @@ pub enum DieSkill {
     Ornery,
     Poison,
     Queer,
+    Rage,
     Reserve,
     Shadow,
     Slow,
@@ -28,7 +29,7 @@ pub enum DieSkill {
 }
 
 impl DieSkill {
-    pub const ALL: [DieSkill; 19] = [
+    pub const ALL: [DieSkill; 20] = [
         DieSkill::Berserk,
         DieSkill::Chance,
         DieSkill::Fire,
@@ -39,6 +40,7 @@ impl DieSkill {
         DieSkill::Ornery,
         DieSkill::Poison,
         DieSkill::Queer,
+        DieSkill::Rage,
         DieSkill::Reserve,
         DieSkill::Shadow,
         DieSkill::Slow,
@@ -63,6 +65,7 @@ impl DieSkill {
             DieSkill::Ornery => 'o',
             DieSkill::Poison => 'p',
             DieSkill::Queer => 'q',
+            DieSkill::Rage => 'G',
             DieSkill::Reserve => 'r',
             DieSkill::Shadow => 's',
             DieSkill::Slow => 'w',
@@ -171,6 +174,11 @@ pub fn skill_info(skill: DieSkill) -> SkillInfo {
             "Queer",
             "R 6.8",
             "Normal sur une valeur paire, Shadow sur une valeur impaire.",
+        ),
+        DieSkill::Rage => (
+            "Rage",
+            "R 6.20",
+            "Ne compte pas pour l'initiative. Capturé, il est remplacé chez son propriétaire par un clone sans Rage ; il perd Rage s'il attaque.",
         ),
         DieSkill::Reserve => (
             "Reserve",

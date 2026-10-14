@@ -86,6 +86,12 @@ pub enum GameEvent {
     Passed {
         player: PlayerId,
     },
+    /// R 6.20: `player`'s captured Rage die left a clone.
+    RageReplaced {
+        player: PlayerId,
+        captured: DieId,
+        replacement: DieId,
+    },
     /// R 6.19: `player` attacks again.
     ExtraTurn {
         player: PlayerId,

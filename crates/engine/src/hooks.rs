@@ -8,11 +8,12 @@ use crate::skill::DieSkill;
 use crate::state::CaptureScoring;
 use std::collections::BTreeSet;
 
-/// R 3.3 + R 6.13 + R 6.14 + R 6.16: does this die count when comparing initiative?
+/// R 3.3 + R 6.13 + R 6.14 + R 6.16 + R 6.20: does this die count when comparing initiative?
 pub(crate) fn counts_for_initiative(die: &Die) -> bool {
     die.skills.iter().all(|skill| match skill {
-        // R 6.13 / R 6.14 / R 6.16: Stinger, Trip and Slow dice are ignored for initiative.
-        DieSkill::Slow | DieSkill::Stinger | DieSkill::Trip => false,
+        // R 6.13 / R 6.14 / R 6.16 / R 6.20: Stinger, Trip, Slow and Rage dice are ignored
+        // for initiative.
+        DieSkill::Rage | DieSkill::Slow | DieSkill::Stinger | DieSkill::Trip => false,
         DieSkill::Berserk
         | DieSkill::Chance
         | DieSkill::Fire
@@ -54,6 +55,7 @@ pub(crate) fn rerolls(die: &Die) -> bool {
         | DieSkill::Slow
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
+        | DieSkill::Rage
         | DieSkill::Value => true,
     })
 }
@@ -87,6 +89,7 @@ fn grows_on_reroll(die: &Die) -> bool {
         | DieSkill::Trip
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
+        | DieSkill::Rage
         | DieSkill::Value => false,
     })
 }
@@ -126,6 +129,7 @@ pub(crate) fn rerolls_after_any_attack(die: &Die) -> bool {
         | DieSkill::Stinger
         | DieSkill::TimeAndSpace
         | DieSkill::Trip
+        | DieSkill::Rage
         | DieSkill::Value => false,
     })
 }
@@ -153,8 +157,35 @@ pub(crate) fn grants_extra_turn(die: &Die) -> bool {
             | DieSkill::Stealth
             | DieSkill::Stinger
             | DieSkill::Trip
+            | DieSkill::Rage
             | DieSkill::Value => false,
         })
+}
+
+/// R 6.20: is this die replaced by a clone when it is captured?
+pub(crate) fn leaves_a_clone(die: &Die) -> bool {
+    die.skills.iter().any(|skill| match skill {
+        DieSkill::Rage => true,
+        DieSkill::Berserk
+        | DieSkill::Chance
+        | DieSkill::Fire
+        | DieSkill::Focus
+        | DieSkill::Konstant
+        | DieSkill::Mighty
+        | DieSkill::Null
+        | DieSkill::Ornery
+        | DieSkill::Poison
+        | DieSkill::Queer
+        | DieSkill::Reserve
+        | DieSkill::Shadow
+        | DieSkill::Slow
+        | DieSkill::Speed
+        | DieSkill::Stealth
+        | DieSkill::Stinger
+        | DieSkill::TimeAndSpace
+        | DieSkill::Trip
+        | DieSkill::Value => false,
+    })
 }
 
 /// Which attacks this die can make (R 4.2, R 4.3, R 6.1, R 6.3, R 6.5, R 6.8–6.10,
@@ -198,6 +229,7 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Slow
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
+            | DieSkill::Rage
             | DieSkill::Value => {}
         }
     }
@@ -233,6 +265,7 @@ pub(crate) fn attack_kinds(die: &Die) -> BTreeSet<AttackKind> {
             | DieSkill::Slow
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
+            | DieSkill::Rage
             | DieSkill::Value => {}
         }
     }
@@ -259,6 +292,7 @@ pub(crate) fn needs_partner(die: &Die) -> bool {
         | DieSkill::Slow
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
+        | DieSkill::Rage
         | DieSkill::Value => false,
     })
 }
@@ -284,6 +318,7 @@ pub(crate) fn can_be_captured(target: &Die, kind: AttackKind, attackers: usize) 
         | DieSkill::Slow
         | DieSkill::Ornery
         | DieSkill::TimeAndSpace
+        | DieSkill::Rage
         | DieSkill::Value => true,
     })
 }
@@ -312,6 +347,7 @@ pub(crate) fn skill_values(die: &Die) -> Vec<i32> {
             | DieSkill::Slow
             | DieSkill::Ornery
             | DieSkill::TimeAndSpace
+            | DieSkill::Rage
             | DieSkill::Value => {}
         }
     }
@@ -349,6 +385,7 @@ pub(crate) fn capture_scoring(attackers: &[&Die], target: &Die) -> CaptureScorin
                 | DieSkill::Slow
                 | DieSkill::Ornery
                 | DieSkill::TimeAndSpace
+                | DieSkill::Rage
                 | DieSkill::Trip => {}
             }
         }

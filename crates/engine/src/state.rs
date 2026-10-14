@@ -146,6 +146,19 @@ impl GameState {
         &mut self.players[p.index()]
     }
 
+    /// An id no die of this match uses yet (R 6.20: Rage clones). Ids of slots are never
+    /// reused, so a clone never collides with a die of the recipe.
+    pub fn fresh_die_id(&self) -> DieId {
+        let used = self.players.iter().flat_map(|p| {
+            p.slots
+                .iter()
+                .map(|s| s.id)
+                .chain(p.active.iter().map(|d| d.id))
+                .chain(p.captured.iter().map(|c| c.die.id))
+        });
+        DieId(used.map(|d| d.0 + 1).max().unwrap_or(0))
+    }
+
     /// The players who must act now (both during a simultaneous SpecifyDice).
     pub fn actors(&self) -> Vec<PlayerId> {
         match &self.waiting_for {

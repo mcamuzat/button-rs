@@ -70,6 +70,12 @@ pub(crate) fn resolve_attack(
             }
         }
     }
+    // R 6.20: a Rage die that took part in the attack loses Rage.
+    for &a in &attack.attackers {
+        if let Some(die) = state.player_mut(player).die_mut(a) {
+            die.skills.remove(DieSkill::Rage);
+        }
+    }
     // R 6.19: one extra turn at most, when a rerolled TimeAndSpace attacker shows odd.
     let plays_again = attack.attackers.iter().any(|&a| {
         state
@@ -115,6 +121,20 @@ fn capture(
         .position(|d| d.id == target)
         .expect("legal target");
     let die = state.player_mut(defender).active.remove(index);
+    // R 6.20: a captured Rage die leaves a clone without Rage, rolled, in its place.
+    if hooks::leaves_a_clone(&die) {
+        let mut clone = die.clone();
+        clone.id = state.fresh_die_id();
+        clone.skills.remove(DieSkill::Rage);
+        clone.dizzy = false;
+        clone.value = clone.sides.roll(&mut state.rng);
+        events.push(GameEvent::RageReplaced {
+            player: defender,
+            captured: target,
+            replacement: clone.id,
+        });
+        state.player_mut(defender).active.insert(index, clone);
+    }
     state
         .player_mut(player)
         .captured

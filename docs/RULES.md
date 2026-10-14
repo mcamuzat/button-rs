@@ -21,7 +21,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 
 - **R 3.1** Au premier tour, chaque joueur choisit ses tailles Swing et Option, en secret ; les choix sont révélés ensemble.
 - **R 3.2** Tous les dés en jeu sont lancés. Les dés capturés à la manche précédente reviennent à leur propriétaire ; chaque manche repart de la recette (hors dés Reserve ajoutés, R 6.11).
-- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger, R 6.16 Slow). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
+- **R 3.3 Initiative.** On compare les dés de chaque joueur, triés par valeur croissante, en ignorant ceux que leurs compétences excluent (R 6.14 Trip, R 6.13 Stinger, R 6.16 Slow, R 6.20 Rage). Le joueur dont le plus petit dé est le plus bas commence ; à égalité on compare le suivant, et ainsi de suite. Si les dés d'un joueur sont épuisés alors que l'autre en a encore, celui qui en a encore commence.
 - **R 3.4** Égalité complète : le premier joueur est tiré au sort.
 - **R 3.5 Réactions.** Le joueur qui n'a pas l'initiative peut réagir avec ses dés Focus (R 6.4) ou Chance (R 6.2), ou laisser l'autre commencer. S'il prend l'initiative, l'autre peut réagir à son tour, et ainsi de suite.
 
@@ -59,6 +59,7 @@ Source : Button Men Online / buttonweavers (`github.com/buttonmen-dev/buttonmen`
 - **R 6.17 Mighty (H).** Chaque fois qu'il se relance, pour quelque raison que ce soit, le dé grandit d'abord jusqu'à la taille suivante de la liste 1, 2, 4, 6, 8, 10, 12, 16, 20, 30 (une taille hors liste passe à la suivante ; 30 et plus ne bougent pas ; un Twin fait grandir chaque moitié). Il ne grandit pas au jet de début de manche, ni quand il se relance après avoir fait une attaque Trip, ni s'il ne se relance pas (Konstant). Il compte à sa taille du moment. (Source : `BMSkillMighty.php`, `BMDie::grow`.)
 - **R 6.18 Ornery (o).** Se relance après chaque attaque de son propriétaire, qu'il y ait participé ou non (un attaquant Ornery ne se relance qu'une fois). Ne se relance pas quand le joueur passe. (Source : `BMSkillOrnery.php`.)
 - **R 6.19 TimeAndSpace (^).** Si un dé TimeAndSpace participe à une attaque et se relance sur une valeur impaire, son propriétaire joue un tour de plus ; un seul tour de plus par attaque. La manche s'arrête quand même si un joueur n'a plus de dés. (Source : `BMSkillTimeAndSpace.php`.)
+- **R 6.20 Rage (G).** Ne compte pas pour l'initiative. Quand un dé Rage est capturé, son propriétaire reçoit à sa place un clone (même taille, mêmes compétences sauf Rage), qui est lancé ; le clone disparaît à la fin de la manche comme tout dé hors recette. Un dé Rage qui participe à une attaque perd Rage. Une attaque Trip ratée ne capture pas et ne crée pas de clone. (Source : `BMSkillRage.php`, `BMAttack::commit_attack`.)
 
 ## R 7 — Interactions retenues
 

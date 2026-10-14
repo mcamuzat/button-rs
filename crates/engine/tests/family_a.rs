@@ -4,7 +4,7 @@ use PlayerId::{One, Two};
 use buttonmen_engine::testing::{attack_state, die, id, opening_state};
 use buttonmen_engine::{
     Action, AttackKind, DeclaredAttack, DieSkill, GameEvent, GameState, PlayerId, ResizeCause,
-    SeededRng, Sides, WaitingFor,
+    SeededRng, Sides, Viewer, WaitingFor, capture_swing, view_for,
 };
 use common::ok;
 
@@ -246,4 +246,126 @@ fn extra_turn_never_prevents_the_end_of_the_round() {
                 .any(|e| matches!(e, GameEvent::ExtraTurn { .. }))
         );
     }
+}
+
+#[test]
+fn a_captured_rage_die_is_replaced_by_a_clone_without_rage() {
+    // R 6.20.
+    let s = attack_state(
+        vec![die(10, 9)],
+        vec![
+            die(8, 4).with(DieSkill::Rage).with(DieSkill::Poison),
+            die(20, 20),
+        ],
+        One,
+    );
+    let (after, events) = ok(&s, One, attack(&s, AttackKind::Power, &[0], &[0]));
+    let two = after.player(Two);
+    assert_eq!(two.active.len(), 2);
+    let clone = &two.active[0];
+    assert_ne!(clone.id, id(&s, Two, 0));
+    assert_eq!(clone.sides, Sides::Single(8));
+    assert!(!clone.has(DieSkill::Rage) && clone.has(DieSkill::Poison));
+    assert!((1..=8).contains(&clone.value));
+    assert_eq!(after.player(One).captured.len(), 1);
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, GameEvent::RageReplaced { player: Two, .. }))
+    );
+}
+
+#[test]
+fn a_rage_die_that_attacks_loses_rage() {
+    let s = attack_state(
+        vec![die(10, 9).with(DieSkill::Rage)],
+        vec![die(8, 4), die(20, 20)],
+        One,
+    );
+    let (after, _) = ok(&s, One, attack(&s, AttackKind::Power, &[0], &[0]));
+    assert!(!active(&after, One, 0).has(DieSkill::Rage));
+}
+
+#[test]
+fn rage_dice_do_not_count_for_initiative() {
+    let s = opening_state(
+        vec![die(6, 1).with(DieSkill::Rage), die(10, 9)],
+        vec![die(6, 3), die(10, 8)],
+    );
+    assert_eq!(s.initiative, Some(Two));
+}
+
+#[test]
+fn a_failed_trip_on_a_rage_die_makes_no_clone() {
+    for seed in 0..30 {
+        let mut s = attack_state(
+            vec![die(4, 1).with(DieSkill::Trip)],
+            vec![die(20, 20).with(DieSkill::Rage), die(30, 30)],
+            One,
+        );
+        s.rng = SeededRng::new(seed);
+        let (after, events) = ok(&s, One, attack(&s, AttackKind::Trip, &[0], &[0]));
+        let captured = !after.player(One).captured.is_empty();
+        assert_eq!(
+            events
+                .iter()
+                .any(|e| matches!(e, GameEvent::RageReplaced { .. })),
+            captured
+        );
+        assert_eq!(after.player(Two).active.len(), 2);
+    }
+}
+
+#[test]
+fn capturing_rage_only_gains_the_captured_points() {
+    let s = attack_state(vec![die(10, 9)], vec![die(8, 4).with(DieSkill::Rage)], One);
+    let attacker = &s.player(One).active[0];
+    let rage = &s.player(Two).active[0];
+    // The owner keeps a clone worth the same 4 kept points: only the 16 captured half-points swing.
+    assert_eq!(capture_swing(&[attacker], rage), 16);
+}
+
+#[test]
+fn rage_clone_does_not_outlive_the_round() {
+    let s = attack_state(vec![die(10, 9)], vec![die(8, 4).with(DieSkill::Rage)], One);
+    // Two now holds only the clone. Force values: Two cannot attack and passes, then One
+    // captures the clone, which ends the round.
+    let (mut s2, _) = ok(&s, One, attack(&s, AttackKind::Power, &[0], &[0]));
+    s2.player_mut(Two).active[0].value = 1;
+    s2.player_mut(One).active[0].value = 10;
+    let (s3, _) = ok(&s2, Two, Action::Pass);
+    let clone = s3.player(Two).active[0].id;
+    let capture_clone = Action::Attack {
+        attack: DeclaredAttack {
+            kind: AttackKind::Power,
+            attackers: vec![id(&s, One, 0)],
+            targets: vec![clone],
+        },
+    };
+    let (next, events) = ok(&s3, One, capture_clone);
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, GameEvent::RoundEnded { .. }))
+    );
+    // The next round starts from the recipe: only the slot die, with Rage again.
+    let two = &next.player(Two).active;
+    assert_eq!(two.len(), 1);
+    assert_eq!(two[0].id, id(&s, Two, 0));
+    assert!(two[0].has(DieSkill::Rage));
+}
+
+#[test]
+fn rage_clone_has_a_notation_in_the_view() {
+    let s = attack_state(
+        vec![die(10, 9)],
+        vec![
+            die(8, 4).with(DieSkill::Rage).with(DieSkill::Poison),
+            die(20, 20),
+        ],
+        One,
+    );
+    let (after, _) = ok(&s, One, attack(&s, AttackKind::Power, &[0], &[0]));
+    let view = view_for(&after, Viewer::Spectator);
+    assert_eq!(view.players[1].active[0].notation, "p(8)");
 }
