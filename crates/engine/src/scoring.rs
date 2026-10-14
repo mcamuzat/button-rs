@@ -1,4 +1,5 @@
 use crate::die::Die;
+use crate::hooks::capture_scoring;
 use crate::ids::PlayerId;
 use crate::skill::DieSkill;
 use crate::state::{CaptureScoring, GameState};
@@ -59,6 +60,14 @@ pub(crate) fn die_points(die: &Die, holding: Holding) -> i32 {
     }
 }
 
+/// R 5.1 + R 6.6 + R 6.7 + R 6.15: how many half-points capturing `target` with
+/// `attackers` swings towards the capturer: the points it gains, plus the kept points
+/// the target's owner loses.
+pub fn capture_swing(attackers: &[&Die], target: &Die) -> i32 {
+    let scoring = capture_scoring(attackers, target);
+    die_points(target, Holding::Captured(scoring)) + die_points(target, Holding::Kept)
+}
+
 /// R 5.1: a player's current round score, in half-points.
 pub fn round_score(state: &GameState, player: PlayerId) -> i32 {
     let p = state.player(player);
@@ -115,6 +124,27 @@ mod tests {
             die_points(&d(20, 2, &[]), Holding::Captured(CaptureScoring::Zero)),
             0
         );
+    }
+
+    #[test]
+    fn capture_swing_follows_the_scoring_of_both_sides() {
+        let plain = d(10, 4, &[]);
+        let null = d(6, 1, &[DieSkill::Null]);
+        let value = d(6, 2, &[DieSkill::Value]);
+        // R 5.1: the owner loses 5 kept, the capturer gains 10 (in half-points: 10 + 20).
+        assert_eq!(capture_swing(&[&plain], &plain), 30);
+        // R 6.7: capturing Poison swings the other way.
+        assert_eq!(
+            capture_swing(&[&plain], &d(10, 4, &[DieSkill::Poison])),
+            -30
+        );
+        // R 6.6: a Null target is worth nothing to anyone.
+        assert_eq!(capture_swing(&[&plain], &null), 0);
+        // R 6.6: captured by a Null attack, the target only leaves its owner's dice.
+        assert_eq!(capture_swing(&[&null, &plain], &plain), 10);
+        // R 6.15: a Value target counts its face; a Value attack captures at the face shown.
+        assert_eq!(capture_swing(&[&plain], &value), 6);
+        assert_eq!(capture_swing(&[&value], &plain), 10 + 8);
     }
 
     #[test]

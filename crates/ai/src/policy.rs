@@ -12,12 +12,17 @@ const MAX_ROLLOUT_STEPS: usize = 400;
 /// What `attack` is expected to swing towards `player` (spec §7, greedy move ordering).
 /// A Trip only captures sometimes: half its gain.
 pub fn attack_gain(state: &GameState, player: PlayerId, attack: &DeclaredAttack) -> f64 {
+    let attackers: Vec<_> = attack
+        .attackers
+        .iter()
+        .filter_map(|&id| state.player(player).die(id))
+        .collect();
     let defender = state.player(player.other());
     let gain: f64 = attack
         .targets
         .iter()
         .filter_map(|&id| defender.die(id))
-        .map(capture_gain)
+        .map(|target| capture_gain(&attackers, target))
         .sum();
     if attack.kind == AttackKind::Trip {
         gain / 2.0
@@ -120,6 +125,37 @@ mod tests {
             panic!("{action:?}")
         };
         assert_eq!(attack.targets, vec![id(&s, Two, 1)]);
+    }
+
+    #[test]
+    fn quick_action_skips_a_null_die_worth_nothing() {
+        // R 6.6: the d20 Null is worth zero to its capturer; the d6 is worth 9 points.
+        let s = attack_state(
+            vec![die(20, 20)],
+            vec![die(20, 10).with(DieSkill::Null), die(6, 5)],
+            One,
+        );
+        let action = quick_action(&s, One, &mut SeededRng::new(1)).unwrap();
+        let Action::Attack { attack } = action else {
+            panic!("{action:?}")
+        };
+        assert_eq!(attack.targets, vec![id(&s, Two, 1)]);
+    }
+
+    #[test]
+    fn a_null_attacker_only_gains_what_the_owner_loses() {
+        let s = attack_state(
+            vec![die(20, 20).with(DieSkill::Null)],
+            vec![die(10, 5)],
+            One,
+        );
+        let attack = DeclaredAttack {
+            kind: AttackKind::Power,
+            attackers: vec![id(&s, One, 0)],
+            targets: vec![id(&s, Two, 0)],
+        };
+        // R 6.6: the d10 leaves Two's kept dice (5 points) and scores nothing for One.
+        assert_eq!(attack_gain(&s, One, &attack), 10.0);
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use buttonmen_engine::{
-    AttackKind, DeclaredAttack, Die, DieSkill, GameState, PlayerId, WaitingFor, check_attack,
+    AttackKind, DeclaredAttack, Die, GameState, PlayerId, WaitingFor, capture_swing, check_attack,
     round_score,
 };
 
@@ -27,16 +27,10 @@ pub fn evaluate(state: &GameState, me: PlayerId) -> f64 {
     rounds * ROUND_WON + score + THREAT_WEIGHT * threat
 }
 
-/// Half-points that capturing `target` swings towards the capturer (R 5.1): it leaves
-/// its owner's kept dice (half its size) and joins the capturer's pile (its full size).
-/// A Poison die swings the other way (R 6.7).
-pub fn capture_gain(target: &Die) -> f64 {
-    let size = f64::from(target.max());
-    if target.has(DieSkill::Poison) {
-        -3.0 * size
-    } else {
-        3.0 * size
-    }
+/// Half-points that capturing `target` with `attackers` swings towards the capturer,
+/// as the engine scores it (R 5.1, Poison R 6.7, Null R 6.6, Value R 6.15).
+pub fn capture_gain(attackers: &[&Die], target: &Die) -> f64 {
+    f64::from(capture_swing(attackers, target))
 }
 
 /// The best single-die capture `side` could make next (Power or Shadow): a cheap
@@ -52,7 +46,7 @@ fn threat(state: &GameState, side: PlayerId) -> f64 {
                     targets: vec![target.id],
                 };
                 if check_attack(state, side, &attack).is_ok() {
-                    best = best.max(capture_gain(target));
+                    best = best.max(capture_gain(&[attacker], target));
                 }
             }
         }
@@ -106,8 +100,9 @@ mod tests {
             ],
             One,
         );
+        let attacker = &s.player(One).active[0];
         let two = s.player(Two);
-        assert!(capture_gain(&two.active[0]) < 0.0);
-        assert_eq!(capture_gain(&two.active[1]), 30.0);
+        assert!(capture_gain(&[attacker], &two.active[0]) < 0.0);
+        assert_eq!(capture_gain(&[attacker], &two.active[1]), 30.0);
     }
 }

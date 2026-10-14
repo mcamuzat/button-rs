@@ -34,7 +34,7 @@ pub use legal::{
     candidate_actions, legal_actions,
 };
 pub use rng::SeededRng;
-pub use scoring::round_score;
+pub use scoring::{capture_swing, round_score};
 pub use setup::new_game;
 pub use skill::{DieSkill, SkillInfo, SkillSet, skill_info};
 pub use state::{
