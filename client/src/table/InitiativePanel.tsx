@@ -25,7 +25,7 @@ export function InitiativePanel({ focus, chance, notation, act }: Props) {
           <select
             value={lowered[f.die]}
             onChange={(e) => setLowered({ ...lowered, [f.die]: Number(e.target.value) })}
-            className="rounded bg-ivory px-2 py-1 text-ink"
+            className="field"
           >
             {Array.from({ length: f.current - f.min + 1 }, (_, k) => f.current - k).map((v) => (
               <option key={v} value={v}>
@@ -41,7 +41,7 @@ export function InitiativePanel({ focus, chance, notation, act }: Props) {
             type="button"
             disabled={changed.length === 0}
             onClick={() => act({ type: "FocusTurnDown", dice: changed })}
-            className="rounded-lg bg-gold px-3 py-1 text-ink disabled:opacity-40"
+            className="btn-primary"
           >
             Baisser (Focus)
           </button>
@@ -51,12 +51,12 @@ export function InitiativePanel({ focus, chance, notation, act }: Props) {
             key={die}
             type="button"
             onClick={() => act({ type: "ChanceReroll", die })}
-            className="rounded-lg bg-gold px-3 py-1 text-ink"
+            className="btn-primary"
           >
             Relancer {notation(die)} (Chance)
           </button>
         ))}
-        <button type="button" onClick={() => act({ type: "PassInitiative" })} className="rounded-lg bg-felt px-3 py-1">
+        <button type="button" onClick={() => act({ type: "PassInitiative" })} className="btn-secondary">
           Laisser commencer l'adversaire
         </button>
       </div>

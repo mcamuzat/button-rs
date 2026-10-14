@@ -35,7 +35,7 @@ export function SpecifyDicePanel({ swing, options, act }: Props) {
             max={r.max}
             value={sizes[i]}
             onChange={(e) => setSizes(sizes.map((s, j) => (j === i ? Number(e.target.value) : s)))}
-            className="flex-1 accent-gold"
+            className="flex-1 accent-accent"
           />
           <span className="w-10 text-right font-display text-xl">{sizes[i]}</span>
         </label>
@@ -49,14 +49,14 @@ export function SpecifyDicePanel({ swing, options, act }: Props) {
               key={size}
               type="button"
               onClick={() => setPicks(picks.map((p, j) => (j === i ? size : p)))}
-              className={`rounded-lg px-3 py-1 ${picks[i] === size ? "bg-gold text-ink" : "bg-felt"}`}
+              className={`rounded-lg px-3 py-1 ${picks[i] === size ? "bg-accent text-white" : "border-2 border-paper"}`}
             >
               {size}
             </button>
           ))}
         </div>
       ))}
-      <button type="button" onClick={submit} className="self-start rounded-lg bg-gold px-4 py-2 font-semibold text-ink">
+      <button type="button" onClick={submit} className="btn-primary self-start">
         Valider
       </button>
     </div>

@@ -19,7 +19,7 @@ export function AttackPanel({ attacks, canPass, selection, act, onClear }: Props
       {canPass ? (
         <>
           <span>Aucune attaque possible.</span>
-          <button type="button" onClick={() => act({ type: "Pass" })} className="rounded-lg bg-gold px-4 py-2 text-ink">
+          <button type="button" onClick={() => act({ type: "Pass" })} className="btn-primary">
             Passer
           </button>
         </>
@@ -33,7 +33,7 @@ export function AttackPanel({ attacks, canPass, selection, act, onClear }: Props
             key={o.attack.kind}
             type="button"
             onClick={() => act({ type: "Attack", attack: o.attack })}
-            className="rounded-lg bg-gold px-4 py-2 font-semibold text-ink"
+            className="btn-primary"
           >
             {attackLabel(o.attack.kind)}
             {o.needs_fire ? " (avec Fire)" : ""}
@@ -41,7 +41,7 @@ export function AttackPanel({ attacks, canPass, selection, act, onClear }: Props
         ))
       )}
       {!empty && (
-        <button type="button" onClick={onClear} className="rounded-lg bg-felt px-3 py-2">
+        <button type="button" onClick={onClear} className="btn-secondary">
           Effacer
         </button>
       )}

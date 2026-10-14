@@ -13,7 +13,7 @@ export function Home({ onHotseat, onAi }: Props) {
     <main className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
       <header>
         <h1 className="font-display text-5xl">Button Men</h1>
-        <p className="mt-2 text-ivory/80">Le jeu de dés de James Ernest, dans le navigateur.</p>
+        <p className="mt-2 text-muted">Le jeu de dés de James Ernest, dans le navigateur.</p>
       </header>
       <div className="grid gap-4 sm:grid-cols-3">
         {modes.map((m) => (
@@ -22,10 +22,10 @@ export function Home({ onHotseat, onAi }: Props) {
             type="button"
             disabled={!m.onClick}
             onClick={m.onClick}
-            className="rounded-xl bg-felt-dark p-5 text-left shadow-lg transition enabled:hover:ring-2 enabled:hover:ring-gold disabled:opacity-50"
+            className="print-card p-5 text-left transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[6px_6px_0_var(--color-accent)] disabled:opacity-50"
           >
             <span className="block font-display text-xl">{m.title}</span>
-            <span className="mt-1 block text-sm text-ivory/70">{m.text}</span>
+            <span className="mt-1 block text-sm text-muted">{m.text}</span>
           </button>
         ))}
       </div>

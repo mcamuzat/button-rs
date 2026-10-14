@@ -20,7 +20,7 @@ function Amounts({ title, list, values, onChange, notation }: {
 }) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="text-sm text-ivory/70">{title}</legend>
+      <legend className="text-sm text-paper/70">{title}</legend>
       {list.map((c) => (
         <label key={c.die} className="flex items-center gap-3">
           <span className="w-24 font-mono">{notation(c.die)}</span>
@@ -30,9 +30,9 @@ function Amounts({ title, list, values, onChange, notation }: {
             max={c.max_amount}
             value={values[c.die] ?? 0}
             onChange={(e) => onChange(c.die, Math.max(0, Math.min(c.max_amount, Number(e.target.value))))}
-            className="w-20 rounded bg-ivory px-2 py-1 text-ink"
+            className="field w-20"
           />
-          <span className="text-xs text-ivory/60">max {c.max_amount}</span>
+          <span className="text-xs text-paper/60">max {c.max_amount}</span>
         </label>
       ))}
     </fieldset>
@@ -55,11 +55,11 @@ export function FirePanel({ fire, boosts, notation, act }: Props) {
           type="button"
           disabled={!action}
           onClick={() => action && act(action)}
-          className="rounded-lg bg-gold px-4 py-2 font-semibold text-ink disabled:opacity-40"
+          className="btn-primary"
         >
           Attaquer
         </button>
-        <button type="button" onClick={() => act({ type: "CancelFire" })} className="rounded-lg bg-felt px-3 py-2">
+        <button type="button" onClick={() => act({ type: "CancelFire" })} className="btn-secondary">
           Annuler l'attaque
         </button>
       </div>

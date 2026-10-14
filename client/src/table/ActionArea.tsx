@@ -66,7 +66,7 @@ export function ActionArea({ view, act, selection, onClearSelection, names, mySe
       break;
   }
   return (
-    <section className="rounded-2xl bg-ink/30 p-4">
+    <section className="on-ink bg-ink p-4 text-paper">
       {who && legal.type !== "Wait" && legal.type !== "GameOver" && (
         <p className="mb-2 font-display text-lg">{who}</p>
       )}

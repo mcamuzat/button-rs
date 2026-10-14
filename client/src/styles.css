@@ -1,15 +1,59 @@
 @import "tailwindcss";
 
+/* Thème « Badge » : les boutons Button Men étaient des badges à épingler, imprimés à bas coût. */
 @theme {
-  --color-felt: #1f5135;
-  --color-felt-dark: #163b27;
-  --color-ivory: #f6f1e4;
-  --color-ink: #1d1b16;
-  --color-gold: #d9a441;
+  --color-paper: #efe8da;
+  --color-card: #fbf8f1;
+  --color-ink: #141414;
+  --color-muted: #5a554b;
+  --color-accent: #d7261e;
   --color-danger: #c4453c;
-  --font-display: Georgia, "Times New Roman", serif;
+  --font-display: "Bowlby One", "Arial Black", Impact, sans-serif;
+  --font-sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --shadow-print: 4px 4px 0 var(--color-ink);
+  --shadow-print-accent: 4px 4px 0 var(--color-accent);
 }
 
 body {
-  @apply min-h-screen bg-felt text-ivory antialiased;
+  @apply min-h-screen bg-paper font-sans text-ink antialiased;
+  /* Trame d'impression. */
+  background-image: radial-gradient(#d8cfbd 1.2px, transparent 1.3px);
+  background-size: 9px 9px;
+}
+
+@layer components {
+  /* Carte imprimée : zones de jeu, tuiles de l'accueil. */
+  .print-card {
+    @apply border-[2.5px] border-ink bg-card;
+    box-shadow: var(--shadow-print);
+  }
+  .btn-primary {
+    @apply border-2 border-ink bg-accent px-4 py-2 font-display text-sm tracking-wide text-white transition disabled:opacity-40;
+    box-shadow: 2px 2px 0 var(--color-ink);
+  }
+  .btn-primary:not(:disabled):hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--color-ink);
+  }
+  .btn-secondary {
+    @apply border-2 border-ink bg-card px-3 py-2 font-extrabold text-ink transition disabled:opacity-40;
+  }
+  .btn-secondary:not(:disabled):hover {
+    @apply bg-paper;
+  }
+  /* Sur le bandeau noir de la barre d'action. */
+  .on-ink .btn-secondary {
+    @apply border-paper bg-transparent text-paper;
+  }
+  .on-ink .btn-secondary:not(:disabled):hover {
+    @apply bg-paper/10;
+  }
+  .field {
+    @apply border-2 border-ink bg-card px-2 py-1 text-ink;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
 }

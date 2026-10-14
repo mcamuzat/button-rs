@@ -64,23 +64,23 @@ export function Table({ adapter, onLeave }: Props) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-4 p-4">
-      <header className="flex items-center gap-4">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <h1 className="font-display text-2xl">Manche {view.round}</h1>
-        <span className="text-sm text-ivory/70">Premier à {view.max_wins} manches</span>
+        <span className="text-sm text-muted">Premier à {view.max_wins} manches</span>
         <div className="ml-auto flex gap-2">
           {seat && view.legal.type !== "GameOver" && (
-            <button type="button" onClick={() => act({ type: "Surrender" })} className="rounded-lg bg-danger/80 px-3 py-1">
+            <button type="button" onClick={() => act({ type: "Surrender" })} className="btn-secondary border-danger py-1 text-danger">
               Abandonner
             </button>
           )}
-          <button type="button" onClick={onLeave} className="rounded-lg bg-felt-dark px-3 py-1">
+          <button type="button" onClick={onLeave} className="btn-secondary py-1">
             Quitter
           </button>
         </div>
       </header>
       {area(two)}
       {extraTurnText(lastEvents, adapter.names, adapter.mySeat) && (
-        <p role="status" className="rounded-lg bg-gold/90 px-4 py-2 text-ink">
+        <p role="status" className="border-2 border-ink bg-accent px-4 py-2 font-display text-white">
           {extraTurnText(lastEvents, adapter.names, adapter.mySeat)}
         </p>
       )}
@@ -96,12 +96,12 @@ export function Table({ adapter, onLeave }: Props) {
       />
       {area(one)}
       {error && (
-        <p role="alert" className="rounded-lg bg-danger/90 px-4 py-2">
+        <p role="alert" className="border-2 border-ink bg-danger px-4 py-2 font-extrabold text-white">
           {error}
         </p>
       )}
       {failure && (
-        <p role="alert" className="rounded-lg bg-danger/90 px-4 py-2">
+        <p role="alert" className="border-2 border-ink bg-danger px-4 py-2 font-extrabold text-white">
           L'IA n'a pas pu jouer : {failure}
         </p>
       )}

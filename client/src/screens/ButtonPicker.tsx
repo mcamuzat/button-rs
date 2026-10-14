@@ -61,7 +61,7 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl">Choix des boutons</h1>
-        <button type="button" onClick={onBack} className="text-ivory/70 hover:text-ivory">
+        <button type="button" onClick={onBack} className="font-extrabold text-muted hover:text-ink">
           ← Accueil
         </button>
       </div>
@@ -72,7 +72,7 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
             key={i}
             type="button"
             onClick={() => setSeat(i)}
-            className={`rounded-xl p-4 text-left ${seat === i ? "bg-gold text-ink" : "bg-felt-dark"}`}
+            className={`print-card p-4 text-left ${seat === i ? "border-accent shadow-[4px_4px_0_var(--color-accent)]" : ""}`}
           >
             <span className="text-sm opacity-70">{vsAi ? (i === 0 ? "Vous" : "IA") : `Joueur ${i + 1}`}</span>
             <span className="block font-display text-xl">{picks[i]?.name ?? "—"}</span>
@@ -86,7 +86,7 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un bouton"
-          className="min-w-48 flex-1 rounded-lg bg-ivory px-3 py-2 text-ink"
+          className="field min-w-48 flex-1 px-3 py-2"
         />
         {vsAi &&
           LEVELS.map((l) => (
@@ -94,19 +94,19 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
               key={l}
               type="button"
               onClick={() => setLevel(l)}
-              className={`rounded-lg px-3 py-2 ${level === l ? "bg-gold text-ink" : "bg-felt-dark"}`}
+              className={level === l ? "btn-primary" : "btn-secondary"}
             >
               {levelLabel(l)}
             </button>
           ))}
-        <button type="button" onClick={pickRandom} className="rounded-lg bg-felt-dark px-3 py-2">
+        <button type="button" onClick={pickRandom} className="btn-secondary">
           Au hasard
         </button>
         <button
           type="button"
           disabled={!picks[0] || !picks[1]}
           onClick={() => picks[0] && picks[1] && onStart(picks[0], picks[1], level)}
-          className="rounded-lg bg-gold px-4 py-2 font-semibold text-ink disabled:opacity-40"
+          className="btn-primary"
         >
           Jouer
         </button>
@@ -119,7 +119,7 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
               key={c}
               type="button"
               onClick={() => chooseCategory(c)}
-              className={`rounded-lg px-3 py-2 ${category === c ? "bg-gold text-ink" : "bg-felt-dark"}`}
+              className={category === c ? "btn-primary" : "btn-secondary"}
             >
               {c === "all" ? "Toutes" : CATEGORY_LABELS[c]}
             </button>
@@ -128,7 +128,7 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
             <select
               value={edition ?? ""}
               onChange={(e) => setEdition(e.target.value === "" ? null : e.target.value)}
-              className="rounded-lg bg-felt-dark px-3 py-2"
+              className="field px-3 py-2"
               aria-label="Édition"
             >
               <option value="">Toutes les éditions ({editions.length})</option>
@@ -152,11 +152,11 @@ export function ButtonPicker({ catalog, vsAi, onStart, onBack }: Props) {
                 disabled={!playable}
                 onClick={() => pick(e)}
                 title={e.playability.type === "Unplayable" ? e.playability.reason : undefined}
-                className="w-full rounded-lg bg-felt-dark p-3 text-left enabled:hover:ring-2 enabled:hover:ring-gold disabled:opacity-40"
+                className="w-full border-2 border-ink bg-card p-3 text-left transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[3px_3px_0_var(--color-accent)] disabled:opacity-40"
               >
                 <span className="font-display">{e.name}</span>
-                {e.set && <span className="ml-2 text-xs text-ivory/60">{e.set}</span>}
-                <span className="block font-mono text-sm text-ivory/80">{e.recipe}</span>
+                {e.set && <span className="ml-2 text-xs text-muted">{e.set}</span>}
+                <span className="block font-mono text-sm text-muted">{e.recipe}</span>
                 {e.playability.type === "Unplayable" && (
                   <span className="block text-xs text-danger">{e.playability.reason}</span>
                 )}

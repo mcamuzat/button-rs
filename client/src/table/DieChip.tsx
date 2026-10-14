@@ -13,16 +13,17 @@ interface Props {
   small?: boolean;
 }
 
-const RING: Record<ChipState, string> = {
-  idle: "ring-1 ring-ink/20",
-  selectable: "ring-2 ring-gold/70 hover:ring-gold",
-  selected: "ring-4 ring-gold -translate-y-1",
+/** Pinback badge: ink rim, inner ring, hard drop shadow (theme « Badge »). */
+const STATE: Record<ChipState, string> = {
+  idle: "bg-card text-ink",
+  selectable: "bg-card text-ink outline-3 outline-offset-3 outline-dashed outline-accent hover:-translate-y-0.5",
+  selected: "bg-accent text-white -translate-y-1 -rotate-6",
 };
 
 export function DieChip({ die, state, onClick, small = false }: Props) {
   const skills = useContext(SkillsContext);
   const letters = die.skills.map((s) => skills.get(s)?.letter ?? "").join("");
-  const size = small ? "h-12 w-12 text-lg" : "h-20 w-20 text-3xl";
+  const size = small ? "h-11 w-11 text-sm" : "h-16 w-16 text-xl";
   return (
     <motion.button
       layout
@@ -30,7 +31,7 @@ export function DieChip({ die, state, onClick, small = false }: Props) {
       onClick={onClick}
       disabled={!onClick}
       title={skillTitle(die, skills)}
-      className={`relative flex ${size} flex-col items-center justify-center rounded-xl bg-ivory font-display text-ink shadow-md transition ${RING[state]} ${die.dizzy ? "opacity-50" : ""}`}
+      className={`relative flex ${size} flex-col items-center justify-center rounded-full border-[3px] border-ink font-display shadow-[inset_0_0_0_3px_var(--color-card),inset_0_0_0_5px_var(--color-ink),0_3px_0_var(--color-ink)] transition ${STATE[state]} ${die.dizzy ? "opacity-50" : ""}`}
     >
       <motion.span
         key={`${die.id}-${die.value}`}
@@ -40,8 +41,8 @@ export function DieChip({ die, state, onClick, small = false }: Props) {
       >
         {die.value}
       </motion.span>
-      <span className="text-[0.65rem] leading-none text-ink/70">
-        {letters && <span className="mr-0.5 font-bold text-danger">{letters}</span>}
+      <span className={`mt-0.5 font-sans text-[0.6rem] leading-none font-extrabold ${state === "selected" ? "text-white/85" : "text-muted"}`}>
+        {letters && <span className={`mr-0.5 ${state === "selected" ? "text-white" : "text-accent"}`}>{letters}</span>}
         {die.max}
       </span>
     </motion.button>

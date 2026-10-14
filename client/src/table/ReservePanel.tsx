@@ -16,12 +16,12 @@ export function ReservePanel({ dice, notation, act }: Props) {
           key={die}
           type="button"
           onClick={() => act({ type: "ChooseReserve", die })}
-          className="rounded-lg bg-gold px-3 py-1 font-mono text-ink"
+          className="btn-primary font-mono"
         >
           {notation(die)}
         </button>
       ))}
-      <button type="button" onClick={() => act({ type: "ChooseReserve", die: null })} className="rounded-lg bg-felt px-3 py-1">
+      <button type="button" onClick={() => act({ type: "ChooseReserve", die: null })} className="btn-secondary">
         Non merci
       </button>
     </div>
