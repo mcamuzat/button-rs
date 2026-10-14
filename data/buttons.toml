@@ -79,3 +79,31 @@ recipe = "(4,4) (8) (10) (12) (X,X)"
 [[button]]
 name = "Tonnerre"
 recipe = "ps(10) zt(8) (12) Bf(6) (R)"
+
+[[button]]
+name = "Ubac"
+recipe = "(4) (6) (10) w(12) (Z)"
+
+[[button]]
+name = "Vétiver"
+recipe = "(4) (8) (10) G(12) (X)"
+
+[[button]]
+name = "Wapiti"
+recipe = "o(4) o(6) (10) (12) (X)"
+
+[[button]]
+name = "Xylème"
+recipe = "H(4) H(6) (10) (12) (X)"
+
+[[button]]
+name = "Yeuse"
+recipe = "(4) (6) n^(12) (12) (X)"
+
+[[button]]
+name = "Zinnia"
+recipe = "(4) (8) #(12) (12) (Z)"
+
+[[button]]
+name = "Ambre"
+recipe = "b(4) (6) (10) (12) (X)"

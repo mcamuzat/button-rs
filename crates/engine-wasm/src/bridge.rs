@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn catalog_and_skills_serialize() {
         let catalog: serde_json::Value = serde_json::from_str(&catalog(None).unwrap()).unwrap();
-        assert_eq!(catalog["entries"].as_array().unwrap().len(), 20);
+        assert_eq!(catalog["entries"].as_array().unwrap().len(), 27);
         assert_eq!(catalog["editions"][0]["category"], "Original");
         let skills: serde_json::Value = serde_json::from_str(&skills()).unwrap();
         assert_eq!(
