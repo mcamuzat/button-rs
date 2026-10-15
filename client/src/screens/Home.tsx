@@ -14,8 +14,10 @@ export function Home({ onHotseat, onAi, onRules }: Props) {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
       <header>
-        <h1 className="font-display text-5xl">Button Men</h1>
-        <p className="mt-2 text-muted">Le jeu de dés de James Ernest, dans le navigateur.</p>
+        <h1 className="font-display text-5xl">button-rs</h1>
+        <p className="mt-2 text-muted">
+          Un duel de dés dans le navigateur, d'après Button Men de James Ernest (Cheapass Games).
+        </p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2">
         {modes.map((m) => (
@@ -31,6 +33,10 @@ export function Home({ onHotseat, onAi, onRules }: Props) {
           </button>
         ))}
       </div>
+      <footer className="text-sm text-muted">
+        Projet de fan non officiel, sans lien avec Cheapass Games. Les personnages sont originaux ; Button Men
+        est une marque de Cheapass Games.
+      </footer>
     </main>
   );
 }

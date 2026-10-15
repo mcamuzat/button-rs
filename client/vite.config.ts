@@ -10,6 +10,9 @@ export default defineConfig({
   // Relative paths: the build works from any folder.
   base: "./",
   plugins: [react(), tailwindcss()],
+  // public/ holds only the buttonweavers import: Cheapass Games characters for private use,
+  // served by the dev server but never copied into a build.
+  build: { copyPublicDir: false },
   worker: { format: "es" },
   server: { allowedHosts: NGROK_HOSTS },
   preview: { allowedHosts: NGROK_HOSTS },

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace --release
+
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      # Must match the wasm-bindgen version in crates/engine-wasm/Cargo.toml exactly.
+      - name: Cache wasm-bindgen-cli
+        id: wasm-bindgen
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-cli-0.2.121
+      - name: Install wasm-bindgen-cli
+        if: steps.wasm-bindgen.outputs.cache-hit != 'true'
+        run: cargo install wasm-bindgen-cli --version 0.2.121 --locked
+      - run: ./scripts/build-wasm.sh
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Test and build the site
+        working-directory: client
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build

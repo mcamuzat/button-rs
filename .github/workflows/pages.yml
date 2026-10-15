@@ -1,0 +1,62 @@
+# Builds the site and publishes it on GitHub Pages.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache wasm-bindgen-cli
+        id: wasm-bindgen
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: wasm-bindgen-cli-0.2.121
+      - name: Install wasm-bindgen-cli
+        if: steps.wasm-bindgen.outputs.cache-hit != 'true'
+        run: cargo install wasm-bindgen-cli --version 0.2.121 --locked
+      - run: ./scripts/build-wasm.sh
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Build the site
+        working-directory: client
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
