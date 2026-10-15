@@ -26,3 +26,7 @@ Après une modification des types Rust exposés au client : `./scripts/gen-types
 cargo test --workspace
 cd client && pnpm test && pnpm type-check
 ```
+
+## Licence
+
+MIT (voir `LICENSE`). Les noms et personnages de Button Men appartiennent à Cheapass Games et ne sont pas couverts par cette licence.
