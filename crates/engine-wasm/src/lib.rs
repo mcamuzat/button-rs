@@ -25,6 +25,11 @@ pub fn skills_json() -> String {
     bridge::skills()
 }
 
+#[wasm_bindgen]
+pub fn swing_ranges_json() -> String {
+    bridge::swing_ranges()
+}
+
 /// A match held on the WASM side; JavaScript only sees views and outcomes.
 #[wasm_bindgen]
 pub struct WasmMatch {

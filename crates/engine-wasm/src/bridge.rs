@@ -92,6 +92,11 @@ pub fn skills() -> String {
     to_json(&DieSkill::ALL.map(skill_info))
 }
 
+/// R 1.2: swing letters and their ranges, for the rules screen.
+pub fn swing_ranges() -> String {
+    to_json(&buttonmen_engine::swing_ranges())
+}
+
 pub fn state_json(state: &GameState) -> String {
     to_json(state)
 }
@@ -173,6 +178,14 @@ mod tests {
             skills.as_array().unwrap().len(),
             buttonmen_engine::DieSkill::ALL.len()
         );
+    }
+
+    #[test]
+    fn swing_ranges_serialize_for_the_rules_screen() {
+        let ranges: serde_json::Value = serde_json::from_str(&swing_ranges()).unwrap();
+        assert_eq!(ranges.as_array().unwrap().len(), 10);
+        assert_eq!(ranges[0]["letter"], "P");
+        assert_eq!(ranges[0]["max"], 30);
     }
 
     #[test]

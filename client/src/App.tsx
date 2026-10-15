@@ -8,25 +8,33 @@ import { WorkerBrain } from "./ai/brain";
 import type { DieSkill } from "./engine/generated/DieSkill";
 import type { Level } from "./engine/generated/Level";
 import type { SkillInfo } from "./engine/generated/SkillInfo";
-import { createMatch, loadCatalog, loadSkills } from "./engine/wasm";
+import type { SwingRange } from "./engine/generated/SwingRange";
+import { createMatch, loadCatalog, loadSkills, loadSwingRanges } from "./engine/wasm";
 import { ButtonPicker } from "./screens/ButtonPicker";
 import { Home } from "./screens/Home";
+import { Rules } from "./screens/Rules";
 import { Table } from "./screens/Table";
 import { SkillsContext } from "./table/SkillsContext";
 
-type Screen = { kind: "home" } | { kind: "pick"; vsAi: boolean } | { kind: "table"; adapter: GameAdapter };
+type Screen =
+  | { kind: "home" }
+  | { kind: "rules" }
+  | { kind: "pick"; vsAi: boolean }
+  | { kind: "table"; adapter: GameAdapter };
 
 export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: "home" });
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [skills, setSkills] = useState<Map<DieSkill, SkillInfo>>(new Map());
+  const [swingRanges, setSwingRanges] = useState<SwingRange[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([loadCatalog(), loadSkills()])
-      .then(([c, s]) => {
+    Promise.all([loadCatalog(), loadSkills(), loadSwingRanges()])
+      .then(([c, s, r]) => {
         setCatalog(c);
         setSkills(s);
+        setSwingRanges(r);
       })
       .catch((e: unknown) => setError(String(e)));
   }, []);
@@ -59,8 +67,10 @@ export function App() {
         <Home
           onHotseat={() => setScreen({ kind: "pick", vsAi: false })}
           onAi={() => setScreen({ kind: "pick", vsAi: true })}
+          onRules={() => setScreen({ kind: "rules" })}
         />
       )}
+      {screen.kind === "rules" && <Rules swingRanges={swingRanges} onBack={() => setScreen({ kind: "home" })} />}
       {screen.kind === "pick" && (
         <ButtonPicker
           catalog={catalog}

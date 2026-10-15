@@ -25,7 +25,7 @@ mod view;
 pub use action::{Action, AttackKind, DeclaredAttack, SpecChoice};
 pub use apply::apply;
 pub use attack::check_attack;
-pub use die::{Die, DieShape, DieSpec, Sides, SwingLetter, TwinPart};
+pub use die::{Die, DieShape, DieSpec, Sides, SwingLetter, SwingRange, TwinPart, swing_ranges};
 pub use error::{AttackError, FireError, ReactionError, RuleError};
 pub use event::{GameEvent, ResizeCause};
 pub use ids::{DieId, PlayerId};

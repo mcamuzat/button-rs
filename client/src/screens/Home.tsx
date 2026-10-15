@@ -1,13 +1,15 @@
 interface Props {
   onHotseat: () => void;
   onAi: () => void;
+  onRules: () => void;
 }
 
-export function Home({ onHotseat, onAi }: Props) {
+export function Home({ onHotseat, onAi, onRules }: Props) {
   const modes = [
     { title: "Deux joueurs, même écran", text: "Passez-vous l'appareil à chaque tour.", onClick: onHotseat },
     { title: "Contre l'IA", text: "Facile, Normal ou Difficile.", onClick: onAi },
     { title: "En ligne", text: "Bientôt.", onClick: undefined },
+    { title: "Règles du jeu", text: "Attaques, dés, score et compétences.", onClick: onRules },
   ];
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
@@ -15,7 +17,7 @@ export function Home({ onHotseat, onAi }: Props) {
         <h1 className="font-display text-5xl">Button Men</h1>
         <p className="mt-2 text-muted">Le jeu de dés de James Ernest, dans le navigateur.</p>
       </header>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {modes.map((m) => (
           <button
             key={m.title}

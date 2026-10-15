@@ -22,6 +22,27 @@ pub enum SwingLetter {
     Z,
 }
 
+/// R 1.2: the sizes a swing letter allows, for display (rules screen).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct SwingRange {
+    pub letter: SwingLetter,
+    pub min: u8,
+    pub max: u8,
+}
+
+/// R 1.2: every swing letter with its range, in notation order.
+pub fn swing_ranges() -> Vec<SwingRange> {
+    SwingLetter::ALL
+        .into_iter()
+        .map(|letter| SwingRange {
+            letter,
+            min: *letter.range().start(),
+            max: *letter.range().end(),
+        })
+        .collect()
+}
+
 impl SwingLetter {
     pub const ALL: [SwingLetter; 10] = [
         SwingLetter::P,
@@ -218,6 +239,22 @@ mod tests {
         assert_eq!(SwingLetter::P.range(), 1..=30);
         assert_eq!(SwingLetter::from_letter('Z'), Some(SwingLetter::Z));
         assert_eq!(SwingLetter::from_letter('Q'), None);
+    }
+
+    #[test]
+    fn swing_ranges_list_every_letter_in_order() {
+        let ranges = swing_ranges();
+        assert_eq!(ranges.len(), 10);
+        assert_eq!(
+            ranges[0],
+            SwingRange {
+                letter: SwingLetter::P,
+                min: 1,
+                max: 30
+            }
+        );
+        let x = ranges.iter().find(|r| r.letter == SwingLetter::X).unwrap();
+        assert_eq!((x.min, x.max), (4, 20));
     }
 
     #[test]
